@@ -77,6 +77,11 @@ export const getReactFlowElements = (state, workflowTemplateId) => {
             type: 'smoothstep',
             target: edge.toState.name,
             animated: true,
+            type: 'custom',
+            data: {
+              transition: edge
+            },
+            arrowHeadType: 'arrow'
           })
         })
         if (alternate) {
@@ -91,7 +96,7 @@ export const getReactFlowElements = (state, workflowTemplateId) => {
       qSize--
     }
     alternate = !alternate
-    dx += 350
+    dx += 600
   }
   return elements
 }
