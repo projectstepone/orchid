@@ -1,11 +1,19 @@
 import { produce } from 'immer'
 import * as workflowTypes from './workflow.types'
 
+const DEFAULT_ACTION_PROGRESS = {
+  processing: false,
+  completed: false,
+  failed: false,
+  message: ""
+}
+
 const initialState = {
   workflowTemplatesById: {},
   workflowTransitionsById: {},
   transitionsByWorkflowTemplateId: {},
-  workflowActionsById: {}
+  workflowActionsById: {},
+  transitionUpdateProgress: {}
 }
 
 const workflowTemplateFetchInProgress = (state, action) => {
@@ -62,6 +70,42 @@ const workflowActionsFetchFailed = (state, action) => {
   return state
 }
 
+const updateTransitionInProgress = (state, { payload: { workflowTemplateId, transitionId }}) => {
+  return produce(state, draftState => {
+    if (!draftState['transitionUpdateProgress'][workflowTemplateId]) {
+      draftState['transitionUpdateProgress'][workflowTemplateId] = {}
+    }
+    draftState['transitionUpdateProgress'][workflowTemplateId][transitionId] = {
+      ...DEFAULT_ACTION_PROGRESS,
+      processing: true
+    }
+  })
+}
+
+const updateTransitionCompleted = (state, { payload: { workflowTemplateId, transitionId }}) => {
+  return produce(state, draftState => {
+    if (!draftState['transitionUpdateProgress'][workflowTemplateId]) {
+      draftState['transitionUpdateProgress'][workflowTemplateId] = {}
+    }
+    draftState['transitionUpdateProgress'][workflowTemplateId][transitionId] = {
+      ...DEFAULT_ACTION_PROGRESS,
+      completed: true
+    }
+  })
+}
+
+const updateTransitionFailed = (state, { payload: { workflowTemplateId, transitionId }}) => {
+  return produce(state, draftState => {
+    if (!draftState['transitionUpdateProgress'][workflowTemplateId]) {
+      draftState['transitionUpdateProgress'][workflowTemplateId] = {}
+    }
+    draftState['transitionUpdateProgress'][workflowTemplateId][transitionId] = {
+      ...DEFAULT_ACTION_PROGRESS,
+      failed: true
+    }
+  })
+}
+
 const handlers = {
   [workflowTypes.FETCH_WORKFLOW_TEMPLATES_IN_PROGRESS]: workflowTemplateFetchInProgress,
   [workflowTypes.FETCH_WORKFLOW_TEMPLATES_FAILED]: workflowTemplateFetchFailed,
@@ -73,7 +117,11 @@ const handlers = {
 
   [workflowTypes.FETCH_WORKFLOW_ACTIONS_IN_PROGRESS]: workflowActionsFetchInProgress,
   [workflowTypes.FETCH_WORKFLOW_ACTIONS_COMPLETED]: workflowActionsFetchCompleted,
-  [workflowTypes.FETCH_WORKFLOW_ACTIONS_FAILED]: workflowActionsFetchFailed
+  [workflowTypes.FETCH_WORKFLOW_ACTIONS_FAILED]: workflowActionsFetchFailed,
+
+  [workflowTypes.UPDATE_TRANSITION_IN_PROGRESS]: updateTransitionInProgress,
+  [workflowTypes.UPDATE_TRANSITION_COMPLETED]: updateTransitionCompleted,
+  [workflowTypes.UPDATE_TRANSITION_FAILED]: updateTransitionFailed
 }
 
 export default (state = initialState, action) => {

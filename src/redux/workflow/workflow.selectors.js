@@ -1,3 +1,10 @@
+const DEFAULT_ACTION_PROGRESS = {
+  processing: false,
+  completed: false,
+  failed: false,
+  message: ""
+}
+
 export const getRootNode = (state, workflowTemplateId) => {
   const workflowTemplate = state.workflow.workflowTemplatesById[workflowTemplateId]
   if (workflowTemplate) {
@@ -38,7 +45,7 @@ export const getChildNodes = (state, workflowTemplateId, startState) => {
   })
 }
 
-export const getReactFlowElements = (state, workflowTemplateId) => {
+export const getReactFlowElements = (state, workflowTemplateId, updatingTransitionId, onTransitionUpdate) => {
   let dx = 0
   let dy = 100
   const elements = []
@@ -76,10 +83,12 @@ export const getReactFlowElements = (state, workflowTemplateId) => {
             source: visitingNode.name,
             type: 'smoothstep',
             target: edge.toState.name,
-            animated: true,
+            animated: edge.active,
             type: 'custom',
             data: {
-              transition: edge
+              transition: edge,
+              onTransitionUpdate,
+              updating: updatingTransitionId === edge.id
             },
             arrowHeadType: 'arrow'
           })
@@ -99,4 +108,14 @@ export const getReactFlowElements = (state, workflowTemplateId) => {
     dx += 600
   }
   return elements
+}
+
+export const getTransitionUpdateProgress = (state, worflowTemplateId, transitionId) => {
+  const transitionUpdateProgress = state.workflow.transitionUpdateProgress
+  if (!transitionUpdateProgress[worflowTemplateId] || !transitionUpdateProgress[worflowTemplateId][transitionId]) {
+    return {
+      ...DEFAULT_ACTION_PROGRESS
+    }
+  }
+  return transitionUpdateProgress[worflowTemplateId][transitionId]
 }

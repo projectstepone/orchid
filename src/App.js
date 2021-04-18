@@ -5,6 +5,9 @@ import * as workflowActions from './redux/workflow/workflow.actions'
 
 import WorkflowEditor from './containers/workflow.editor'
 
+import OSnackbar from './components/notification/OSnackbar'
+import SnackbarProvider from './components/notification/SnackbarProvider'
+
 function App() {
   
   const dispatch = useDispatch()
@@ -17,8 +20,11 @@ function App() {
 
   return (
     <div className="App">
-      <h1 style={{ marginLeft: 50 }}>Orchid</h1>
-      <WorkflowEditor />
+      <SnackbarProvider>
+        <h1 style={{ marginLeft: 50 }}>Orchid</h1>
+        <WorkflowEditor />
+        <OSnackbar />
+     </SnackbarProvider>
     </div>
   );
 }

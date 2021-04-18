@@ -1,12 +1,16 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
+import { produce } from 'immer'
 import ReactFlow, { removeElements, addEdge, Background, MiniMap, Controls } from 'react-flow-renderer'
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import Popover from '@material-ui/core/Popover'
 import { MenuItem, TextField, Button } from '@material-ui/core'
 
 import * as workflowSelectors from '../redux/workflow/workflow.selectors'
+import * as workflowActions from '../redux/workflow/workflow.actions'
 
 import CustomEdge from '../components/reactflow/custom.edge'
+
+import { SnackbarContext } from '../components/notification/SnackbarProvider'
 
 const WORKFLOW_TEMPLATE_ID = 'f3fea53e-b497-4b5c-b146-894c8eae51b1'
 
@@ -14,18 +18,56 @@ const edgeTypes = {
   custom: CustomEdge,
 }
 
+const escapeDoubleQuotes = (str) => {
+	return str.replace(/\\([\s\S])|(")/g,"\\$1$2"); // thanks @slevithan!
+}
+
 const WorkflowEditor = () => {
 
+  const dispatch = useDispatch()
   const [showNodeEditor, setShowNodeEditor] = useState(false)
   const [popOverLocation, setPopOverLocation] = useState({ top: 600, left: 600 })
   const [newStateForm, setNewStateForm] = useState(false)
-  const [newStates, setNewStates] = useState({ byId: {} })
-  const [newState, setNewState] = useState("")
-  const [terminalState, setTerminalState] = useState("false")
-  const elements = useSelector(state => workflowSelectors.getReactFlowElements(state, WORKFLOW_TEMPLATE_ID))
+  const [updatingTransition, setUpdatingTransition] = useState(false)
+  const [updatingTransitionId, setUpdatingTransitionId] = useState('')
+  const updateTransitionProgress = useSelector(state => workflowSelectors.getTransitionUpdateProgress(state, WORKFLOW_TEMPLATE_ID, updatingTransitionId))
 
-  console.log("elements", elements)
+  const snackbarValue = React.useContext(SnackbarContext)
+  const { showSuccess, showError } = snackbarValue
+
   console.log("popOverLocation", popOverLocation)
+
+  const onTransitionUpdate = useCallback((transition) => {
+    const updatedTransition = produce(transition, draftTransition => {
+      // if (draftTransition.rule) {
+      //   draftTransition.rule = escapeDoubleQuotes(draftTransition.rule)
+      // }
+    })
+    dispatch(workflowActions.updateTransition(WORKFLOW_TEMPLATE_ID, updatedTransition))
+    setUpdatingTransition(true)
+    setUpdatingTransitionId(transition.id)
+    setTimeout(() => {
+      setUpdatingTransition(false)
+      setUpdatingTransitionId('')
+    }, 2000)
+  }, [dispatch])
+
+  useEffect(() => {
+    if (updatingTransition) {
+      if (updateTransitionProgress.failed) {
+        showError("Transition update failed")
+        setUpdatingTransition(false)
+      }
+      if (updateTransitionProgress.completed) {
+        showSuccess("Transition updated")
+        setUpdatingTransitionId('')
+        setUpdatingTransition(false)
+      }
+    }
+  }, [updateTransitionProgress])
+
+  const elements = useSelector(state => workflowSelectors.getReactFlowElements(state, WORKFLOW_TEMPLATE_ID, updatingTransitionId, onTransitionUpdate))
+  console.log("elements", elements)
 
   const onPaneClick = (event) => {
     console.log('event', event)
@@ -53,7 +95,7 @@ const WorkflowEditor = () => {
     console.log('params', params)
   }
 
-  const onElementClick = (element) => {
+  const onElementClick = (event, element) => {
     console.log('element', element)
   }
 
@@ -120,7 +162,7 @@ const WorkflowEditor = () => {
         <MiniMap />
         <Controls />
         <Background color="#aaa" gap={10} />
-     </ReactFlow> 
+     </ReactFlow>
     </div>
   )
 }
