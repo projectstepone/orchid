@@ -5,15 +5,19 @@ import { useSelector, useDispatch } from 'react-redux';
 import Popover from '@material-ui/core/Popover'
 import { MenuItem, TextField, Button } from '@material-ui/core'
 
+import {
+  useParams,
+  useRouteMatch
+} from 'react-router-dom'
+
 import * as workflowSelectors from '../redux/workflow/workflow.selectors'
 import * as workflowActions from '../redux/workflow/workflow.actions'
+import * as breadcrumbActions from '../redux/breadcrumb/breadcrumb.actions'
 
 import CustomEdge from '../components/reactflow/custom.edge'
 import TransitionEditor from '../components/transition.editor'
 
 import { SnackbarContext } from '../components/notification/SnackbarProvider'
-
-const WORKFLOW_TEMPLATE_ID = 'f3fea53e-b497-4b5c-b146-894c8eae51b1'
 
 const edgeTypes = {
   custom: CustomEdge,
@@ -25,7 +29,9 @@ const escapeDoubleQuotes = (str) => {
 
 const WorkflowEditor = () => {
 
+  const { workflowTemplateId } = useParams()
   const dispatch = useDispatch()
+  const match = useRouteMatch()
   const [addTransition, setAddTransition] = useState(false)
   const [addingTransition, setAddingTransition] = useState(false)
   const [popOverLocation, setPopOverLocation] = useState({ top: 600, left: 600 })
@@ -34,13 +40,21 @@ const WorkflowEditor = () => {
   const [updatingTransitionId, setUpdatingTransitionId] = useState('')
   const [creatingTransition, setCreatingTransition] = useState(false)
   const [creatingTransitionId, setCreatingTransitionId] = useState('')
-  const updateTransitionProgress = useSelector(state => workflowSelectors.getTransitionUpdateProgress(state, WORKFLOW_TEMPLATE_ID, updatingTransitionId))
-  const createTransitionProgress = useSelector(state => workflowSelectors.getTransitionCreateProgress(state, WORKFLOW_TEMPLATE_ID, creatingTransitionId))
-  const workflowStates = useSelector(state => workflowSelectors.getAllStates(state, WORKFLOW_TEMPLATE_ID))
+  const updateTransitionProgress = useSelector(state => workflowSelectors.getTransitionUpdateProgress(state, workflowTemplateId, updatingTransitionId))
+  const createTransitionProgress = useSelector(state => workflowSelectors.getTransitionCreateProgress(state, workflowTemplateId, creatingTransitionId))
+  const workflowStates = useSelector(state => workflowSelectors.getAllStates(state, workflowTemplateId))
   const workflowAllActions = useSelector(state => workflowSelectors.getAllActions(state))
+  const workflowTemplate = useSelector(state => workflowSelectors.getWorkflowTemplate(state, workflowTemplateId))
 
   const snackbarValue = React.useContext(SnackbarContext)
   const { showSuccess, showError } = snackbarValue
+
+  useEffect(() => {
+    dispatch(breadcrumbActions.pushBreadcrumb({
+      title: workflowTemplate.name,
+      link: match.url
+    }))
+  }, [dispatch, workflowTemplate.name, match.url])
 
   const memoizedStates = useMemo(() => {
     return workflowStates
@@ -60,7 +74,7 @@ const WorkflowEditor = () => {
       //   draftTransition.rule = escapeDoubleQuotes(draftTransition.rule)
       // }
     })
-    dispatch(workflowActions.updateTransition(WORKFLOW_TEMPLATE_ID, updatedTransition))
+    dispatch(workflowActions.updateTransition(workflowTemplateId, updatedTransition))
     setUpdatingTransition(true)
     setUpdatingTransitionId(transition.id)
     setTimeout(() => {
@@ -75,7 +89,7 @@ const WorkflowEditor = () => {
       //   draftTransition.rule = escapeDoubleQuotes(draftTransition.rule)
       // }
     })
-    dispatch(workflowActions.createTransition(WORKFLOW_TEMPLATE_ID, updatedTransition))
+    dispatch(workflowActions.createTransition(workflowTemplateId, updatedTransition))
     setCreatingTransition(true)
     setCreatingTransitionId(transition.id)
     setTimeout(() => {
@@ -115,7 +129,7 @@ const WorkflowEditor = () => {
   const elements = useSelector(
     state => workflowSelectors.getReactFlowElements(
       state,
-      WORKFLOW_TEMPLATE_ID,
+      workflowTemplateId,
       updatingTransitionId,
       onTransitionUpdate,
       memoizedStates,

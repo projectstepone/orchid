@@ -16,6 +16,9 @@ export const fetchWorkflowTemplates = () => {
         "type": workflowTypes.FETCH_WORKFLOW_TEMPLATES_COMPLETED,
         "payload": { workflowTemplates }
       })
+      workflowTemplates.forEach((workflowTemplate) => {
+        dispatch(fetchWrokflowTransitions(workflowTemplate.id))
+      })
     })
     .catch(err => {
       console.log("err in fetchWorkflowTemplates", err)
@@ -184,6 +187,41 @@ export const createTransitions = (workflowTemplateId, transitions, referenceId) 
         "payload": { 
           workflowTemplateId,
           "transitionId": referenceId
+        }
+      })
+    })
+  }
+}
+
+export const createWorkflowTemplate = (workflowTemplate) => {
+  return (dispatch) => {
+    dispatch({
+      "type": workflowTypes.CREATE_WORKFLOW_TEMPLATE_IN_PROGRESS,
+      "payload": {
+        workflowTemplateName: workflowTemplate.name
+      }
+    })
+    axios.post(`${BASE_URL}/v1/templates/workflow`, workflowTemplate)
+    .then(response => {
+      dispatch({
+        "type": workflowTypes.FETCH_WORKFLOW_TEMPLATES_COMPLETED,
+        "payload": {
+          workflowTemplates: [response.data]
+        }
+      })
+      dispatch({
+        "type": workflowTypes.CREATE_WORKFLOW_TEMPLATE_COMPLETED,
+        "payload": { 
+          workflowTemplateName: workflowTemplate.name
+        }
+      })
+    })
+    .catch(err => {
+      console.log("err in createWorkflowTemplate", err)
+      dispatch({
+        "type": workflowTypes.CREATE_WORKFLOW_TEMPLATE_FAILED,
+        "payload": { 
+          workflowTemplateName: workflowTemplate.name
         }
       })
     })

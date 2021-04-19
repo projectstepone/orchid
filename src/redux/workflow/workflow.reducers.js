@@ -14,7 +14,8 @@ const initialState = {
   transitionsByWorkflowTemplateId: {},
   workflowActionsById: {},
   transitionUpdateProgress: {},
-  transitionCreateProgress: {}
+  transitionCreateProgress: {},
+  workflowTemplateCreateProgress: {}
 }
 
 const workflowTemplateFetchInProgress = (state, action) => {
@@ -143,6 +144,34 @@ const createTransitionsFailed = (state, { payload: { workflowTemplateId, transit
   })
 }
 
+// workflowTemplateCreateProgress
+export const createWorkflowTemplateInProgress = (state, { payload: { workflowTemplateName }}) => {
+  return produce(state, draftState => {
+    draftState['workflowTemplateCreateProgress'][workflowTemplateName] = {
+      ...DEFAULT_ACTION_PROGRESS,
+      processing: true
+    }
+  })
+}
+
+export const createWorkflowTemplateCompleted = (state, { payload: { workflowTemplateName }}) => {
+  return produce(state, draftState => {
+    draftState['workflowTemplateCreateProgress'][workflowTemplateName] = {
+      ...DEFAULT_ACTION_PROGRESS,
+      completed: true
+    }
+  })
+}
+
+export const createWorkflowTemplateFailed = (state, { payload: { workflowTemplateName }}) => {
+  return produce(state, draftState => {
+    draftState['workflowTemplateCreateProgress'][workflowTemplateName] = {
+      ...DEFAULT_ACTION_PROGRESS,
+      failed: true
+    }
+  })
+}
+
 const handlers = {
   [workflowTypes.FETCH_WORKFLOW_TEMPLATES_IN_PROGRESS]: workflowTemplateFetchInProgress,
   [workflowTypes.FETCH_WORKFLOW_TEMPLATES_FAILED]: workflowTemplateFetchFailed,
@@ -162,7 +191,11 @@ const handlers = {
 
   [workflowTypes.CREATE_TRANSITIONS_IN_PROGRESS]: createTransitionsInProgress,
   [workflowTypes.CREATE_TRANSITIONS_COMPLETED]: createTransitionsCompleted,
-  [workflowTypes.CREATE_TRANSITIONS_FAILED]: createTransitionsFailed
+  [workflowTypes.CREATE_TRANSITIONS_FAILED]: createTransitionsFailed,
+
+  [workflowTypes.CREATE_WORKFLOW_TEMPLATE_IN_PROGRESS]: createWorkflowTemplateInProgress,
+  [workflowTypes.CREATE_WORKFLOW_TEMPLATE_COMPLETED]: createWorkflowTemplateCompleted,
+  [workflowTypes.CREATE_WORKFLOW_TEMPLATE_FAILED]: createWorkflowTemplateFailed,
 }
 
 export default (state = initialState, action) => {

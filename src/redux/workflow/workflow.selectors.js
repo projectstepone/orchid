@@ -166,3 +166,35 @@ export const getTransitionCreateProgress = (state, worflowTemplateId, transition
   }
   return transitionCreateProgress[worflowTemplateId][transitionId]
 }
+
+export const getWorkflowTemplates = (state) => {
+  const workflowTemplatesById = state.workflow.workflowTemplatesById
+  return Object.keys(workflowTemplatesById)
+  .map(id => ({
+    ...workflowTemplatesById[id]
+  }))
+}
+
+export const getWorkflowTemplate = (state, templateId) => {
+  const workflowTemplatesById = state.workflow.workflowTemplatesById
+  if (!workflowTemplatesById[templateId]) {
+    return {
+      name: "Loading..."
+    }
+  }
+  return {
+    ...workflowTemplatesById[templateId]
+  }
+}
+
+export const getWorkflowCreateProgress = (state, name) => {
+  const workflowTemplateCreateProgress = state.workflow.workflowTemplateCreateProgress
+  if (!workflowTemplateCreateProgress[name]) {
+    return {
+      ...DEFAULT_ACTION_PROGRESS
+    }
+  }
+  return {
+    ...workflowTemplateCreateProgress[name]
+  }
+}
