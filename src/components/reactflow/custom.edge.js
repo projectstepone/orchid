@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { getBezierPath, getMarkerEnd } from 'react-flow-renderer'
-import { Popover, TextField, Button, FormControlLabel, Checkbox } from '@material-ui/core'
 import { makeStyles } from '@material-ui/core/styles'
-import { produce } from 'immer'
 
 import TransitionEditor from '../transition.editor'
 
@@ -61,6 +59,7 @@ export default function CustomEdge({
         updateProgress={data.updateProgress}
         states={data.states}
         actions={data.actions}
+        create={false}
       />
     </>
   )

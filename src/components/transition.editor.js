@@ -1,19 +1,22 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import { Popover, TextField, Button, FormControlLabel, Checkbox } from '@material-ui/core'
 import { makeStyles } from '@material-ui/core/styles'
-import Autocomplete from '@material-ui/lab/Autocomplete'
+import Autocomplete, { createFilterOptions } from '@material-ui/lab/Autocomplete'
 import { produce } from 'immer'
 
+const filter = createFilterOptions()
+
 const TransitionEditor = (props) => {
-  const { location, updateInProgress, open, updateProgress, states, actions } = props
+  const { location, updateInProgress, open, updateProgress, createProgress, states, actions, create } = props
   const styles = useStyles()
   const [editingTransition, setEditingTransition] = useState(false)
   const [transition, setTransition] = useState({})
   const [updatingTransition, setUpdatingTransition] = useState(false)
+  const [creatingTransition, setCreatingTransition] = useState(false)
 
   useEffect(() => {
     setTransition(JSON.parse(JSON.stringify(props.transition)))
-  }, [props.transition.id])
+  }, [props.transition])
 
   useEffect(() => {
     if (updatingTransition) {
@@ -23,12 +26,26 @@ const TransitionEditor = (props) => {
     }
   }, [updateProgress, updatingTransition])
 
+  useEffect(() => {
+    if (creatingTransition) {
+      if (createProgress.completed) {
+        setEditingTransition(false)
+      }
+    }
+  }, [createProgress, creatingTransition])
+
   const onCancelEdit = () => {
     // reset transition from props to state transition
     if (editingTransition) {
       setTransition(JSON.parse(JSON.stringify(props.transition)))
       setEditingTransition(false)
     }
+  }
+
+  const onIdChange = (event) => {
+    setTransition(produce(transition, draftTransition => {
+      draftTransition.id = event.target.value
+    }))
   }
 
   const onRuleChange = (event) => {
@@ -44,6 +61,7 @@ const TransitionEditor = (props) => {
   }
 
   const onToStateChange = (event, value) => {
+    console.log('toState', value)
     setTransition(produce(transition, draftTransition => {
       draftTransition.toState.name = value !== null ? value.name : ''
       draftTransition.toState.terminal = value !== null ? value.terminal : false
@@ -74,12 +92,16 @@ const TransitionEditor = (props) => {
     }))
   }
 
-
   const onStartEditingOrSave = () => {
     if (editingTransition) {
       // save clicked
-      props.onTransitionUpdate(transition)
-      setUpdatingTransition(true)
+      if (create) {
+        props.onTransitionCreate(transition)
+        setCreatingTransition(true)
+      } else {
+        props.onTransitionUpdate(transition)
+        setUpdatingTransition(true)
+      }
     } else {
       // edit clicked
       setEditingTransition(true)
@@ -112,8 +134,9 @@ const TransitionEditor = (props) => {
           <TextField
             className={styles.textField}
             label={"id"}
-            disabled // we cant edit id of a transition
+            disabled={ !create || !editingTransition }
             value={transition.id}
+            onChange={onIdChange}
           />
           <Autocomplete
             id="transition-type-auto"
@@ -165,6 +188,16 @@ const TransitionEditor = (props) => {
               return option.name === value.name
             }}
             onChange={onToStateChange}
+            filterOptions={(options, params) => {
+              const filtered = filter(options, params);
+              if (params.inputValue !== '') {
+                filtered.push({
+                  name: `${params.inputValue}`,
+                  terminal: false
+                });
+              }
+              return filtered;
+            }}
           />
           <FormControlLabel
             className={styles.textField}
@@ -180,14 +213,14 @@ const TransitionEditor = (props) => {
             label="is toState terminal ?"
           />
           <Autocomplete
-            id="transition-to-state-auto"
+            id="transition-action-auto"
             className={styles.textField}
             options={actions.filter(action => action.id !== transition.action)}
-            getOptionLabel={(option) => option.id}
+            getOptionLabel={(option) => option !== undefined ? option.id ? option.id : '' : ''}
             renderInput={(params) => <TextField {...params} label="action"/> }
             disabled={!editingTransition || updateInProgress}
             value={{
-              "id": transition.action
+              "id": transition.action ? transition.action : ''
             }}
             getOptionSelected={(option, value) => {
               return option.id === value.id
@@ -203,7 +236,7 @@ const TransitionEditor = (props) => {
             onChange={onRuleChange}
           />
           <Button variant="contained" disabled={updateInProgress} color="primary" className={styles.textField} onClick={onStartEditingOrSave}>
-            { editingTransition ? "SAVE" : "EDIT" }
+            { editingTransition ? create ? "CREATE" : "SAVE" : "EDIT" }
           </Button>
           { 
             editingTransition && <Button disabled={updateInProgress} variant="contained" color="primary" className={styles.textField} onClick={onCancelEdit}>

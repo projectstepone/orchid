@@ -13,7 +13,8 @@ const initialState = {
   workflowTransitionsById: {},
   transitionsByWorkflowTemplateId: {},
   workflowActionsById: {},
-  transitionUpdateProgress: {}
+  transitionUpdateProgress: {},
+  transitionCreateProgress: {}
 }
 
 const workflowTemplateFetchInProgress = (state, action) => {
@@ -106,6 +107,42 @@ const updateTransitionFailed = (state, { payload: { workflowTemplateId, transiti
   })
 }
 
+const createTransitionsInProgress = (state, { payload: { workflowTemplateId, transitionId }}) => {
+  return produce(state, draftState => {
+    if (!draftState['transitionCreateProgress'][workflowTemplateId]) {
+      draftState['transitionCreateProgress'][workflowTemplateId] = {}
+    }
+    draftState['transitionCreateProgress'][workflowTemplateId][transitionId] = {
+      ...DEFAULT_ACTION_PROGRESS,
+      processing: true
+    }
+  })
+}
+
+const createTransitionsCompleted = (state, { payload: { workflowTemplateId, transitionId }}) => {
+  return produce(state, draftState => {
+    if (!draftState['transitionCreateProgress'][workflowTemplateId]) {
+      draftState['transitionCreateProgress'][workflowTemplateId] = {}
+    }
+    draftState['transitionCreateProgress'][workflowTemplateId][transitionId] = {
+      ...DEFAULT_ACTION_PROGRESS,
+      completed: true
+    }
+  })
+}
+
+const createTransitionsFailed = (state, { payload: { workflowTemplateId, transitionId }}) => {
+  return produce(state, draftState => {
+    if (!draftState['transitionCreateProgress'][workflowTemplateId]) {
+      draftState['transitionCreateProgress'][workflowTemplateId] = {}
+    }
+    draftState['transitionCreateProgress'][workflowTemplateId][transitionId] = {
+      ...DEFAULT_ACTION_PROGRESS,
+      failed: true
+    }
+  })
+}
+
 const handlers = {
   [workflowTypes.FETCH_WORKFLOW_TEMPLATES_IN_PROGRESS]: workflowTemplateFetchInProgress,
   [workflowTypes.FETCH_WORKFLOW_TEMPLATES_FAILED]: workflowTemplateFetchFailed,
@@ -121,7 +158,11 @@ const handlers = {
 
   [workflowTypes.UPDATE_TRANSITION_IN_PROGRESS]: updateTransitionInProgress,
   [workflowTypes.UPDATE_TRANSITION_COMPLETED]: updateTransitionCompleted,
-  [workflowTypes.UPDATE_TRANSITION_FAILED]: updateTransitionFailed
+  [workflowTypes.UPDATE_TRANSITION_FAILED]: updateTransitionFailed,
+
+  [workflowTypes.CREATE_TRANSITIONS_IN_PROGRESS]: createTransitionsInProgress,
+  [workflowTypes.CREATE_TRANSITIONS_COMPLETED]: createTransitionsCompleted,
+  [workflowTypes.CREATE_TRANSITIONS_FAILED]: createTransitionsFailed
 }
 
 export default (state = initialState, action) => {

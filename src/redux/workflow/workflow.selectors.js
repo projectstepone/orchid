@@ -156,3 +156,13 @@ export const getTransitionUpdateProgress = (state, worflowTemplateId, transition
   }
   return transitionUpdateProgress[worflowTemplateId][transitionId]
 }
+
+export const getTransitionCreateProgress = (state, worflowTemplateId, transitionId) => {
+  const transitionCreateProgress = state.workflow.transitionCreateProgress
+  if (!transitionCreateProgress[worflowTemplateId] || !transitionCreateProgress[worflowTemplateId][transitionId]) {
+    return {
+      ...DEFAULT_ACTION_PROGRESS
+    }
+  }
+  return transitionCreateProgress[worflowTemplateId][transitionId]
+}
