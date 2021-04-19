@@ -11,13 +11,15 @@ export const getRootNode = (state, workflowTemplateId) => {
     return {
       name: workflowTemplate.startState.name,
       state: workflowTemplate.startState.name,
-      rootNode: true
+      rootNode: true,
+      terminal: workflowTemplate.startState.terminal
     }
   }
   return {
     name: 'NA',
     state: 'NA',
-    rootNode: false
+    rootNode: false,
+    terminal: false
   }
 }
 
@@ -40,12 +42,51 @@ export const getChildNodes = (state, workflowTemplateId, startState) => {
     return {
       name: transition.toState.name,
       state: transition.toState.name,
-      rootNode: false
+      rootNode: false,
+      terminal: transition.toState.terminal
     }
   })
 }
 
-export const getReactFlowElements = (state, workflowTemplateId, updatingTransitionId, onTransitionUpdate) => {
+export const getAllActions = (state) => {
+  const workflowActionsById = state.workflow.workflowActionsById
+  return Object.keys(workflowActionsById).map(action => ({ id: action }))
+}
+
+export const getAllStates = (state, workflowTemplateId) => {
+  const rootNode = getRootNode(state, workflowTemplateId)
+  if (!rootNode.rootNode) {
+    return []
+  }
+  let queue = []
+  const visitedNode = {}
+  queue.push(rootNode)
+  let states = []
+  while (queue.length !== 0) {
+    let qSize = queue.length
+    while (qSize != 0) {
+      const visitingNode = queue.shift()
+      if (!(visitingNode.name in visitedNode)) {
+        const childNodes = getChildNodes(state, workflowTemplateId, visitingNode.state)
+        queue = queue.concat(childNodes)
+        visitedNode[visitingNode.name] = true
+        states.push({
+          name: visitingNode.name,
+          state: visitingNode.name,
+          terminal: visitingNode.terminal
+        })
+      }
+      qSize--
+    }
+  }
+  return states
+}
+
+export const getReactFlowElements = (
+  state, workflowTemplateId, updatingTransitionId, 
+  onTransitionUpdate, memoizedStates,
+  memoizedUpdateTransitionProgress, memoizedActions) => {
+  
   let dx = 0
   let dy = 100
   const elements = []
@@ -60,10 +101,8 @@ export const getReactFlowElements = (state, workflowTemplateId, updatingTransiti
   while (queue.length !== 0) {
     let qSize = queue.length
     dy = 100
-    console.log('qSize', qSize)
     while (qSize != 0) {
       const visitingNode = queue.shift()
-      console.log('visitingNode', visitingNode)
       if (!(visitingNode.name in visitedNode)) {
         elements.push({
           id: visitingNode.name,
@@ -72,11 +111,8 @@ export const getReactFlowElements = (state, workflowTemplateId, updatingTransiti
           position: { x: dx, y: dy }
         })
         const childNodes = getChildNodes(state, workflowTemplateId, visitingNode.state)
-        console.log('childNodes', childNodes)
         queue = queue.concat(childNodes)
         const edges = getEdges(state, workflowTemplateId, visitingNode.state)
-        console.log('edges', edges)
-        console.log('queue', queue)
         edges.forEach(edge => {
           elements.push({
             id: edge.id,
@@ -88,7 +124,10 @@ export const getReactFlowElements = (state, workflowTemplateId, updatingTransiti
             data: {
               transition: edge,
               onTransitionUpdate,
-              updating: updatingTransitionId === edge.id
+              updating: updatingTransitionId === edge.id,
+              states: memoizedStates,
+              updateProgress: updatingTransitionId === edge.id ?  memoizedUpdateTransitionProgress : {},
+              actions: memoizedActions
             },
             arrowHeadType: 'arrow'
           })
@@ -99,8 +138,6 @@ export const getReactFlowElements = (state, workflowTemplateId, updatingTransiti
           dy += 150
         }
         visitedNode[visitingNode.name] = true
-      } else {
-        console.log('visitedNode', visitedNode)
       }
       qSize--
     }

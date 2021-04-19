@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useCallback, useEffect, useMemo } from 'react'
 import { produce } from 'immer'
 import ReactFlow, { removeElements, addEdge, Background, MiniMap, Controls } from 'react-flow-renderer'
 import { useSelector, useDispatch } from 'react-redux';
@@ -31,11 +31,23 @@ const WorkflowEditor = () => {
   const [updatingTransition, setUpdatingTransition] = useState(false)
   const [updatingTransitionId, setUpdatingTransitionId] = useState('')
   const updateTransitionProgress = useSelector(state => workflowSelectors.getTransitionUpdateProgress(state, WORKFLOW_TEMPLATE_ID, updatingTransitionId))
+  const workflowStates = useSelector(state => workflowSelectors.getAllStates(state, WORKFLOW_TEMPLATE_ID))
+  const workflowActions = useSelector(state => workflowSelectors.getAllActions(state))
 
   const snackbarValue = React.useContext(SnackbarContext)
   const { showSuccess, showError } = snackbarValue
 
-  console.log("popOverLocation", popOverLocation)
+  const memoizedStates = useMemo(() => {
+    return workflowStates
+  }, [workflowStates.length])
+
+  const memoizedActions = useMemo(() => {
+    return workflowActions
+  }, [workflowActions.length])
+
+  const memoizedUpdateTransitionProgress = useMemo(() => {
+    return updateTransitionProgress
+  }, [updateTransitionProgress])
 
   const onTransitionUpdate = useCallback((transition) => {
     const updatedTransition = produce(transition, draftTransition => {
@@ -66,8 +78,17 @@ const WorkflowEditor = () => {
     }
   }, [updateTransitionProgress])
 
-  const elements = useSelector(state => workflowSelectors.getReactFlowElements(state, WORKFLOW_TEMPLATE_ID, updatingTransitionId, onTransitionUpdate))
-  console.log("elements", elements)
+  const elements = useSelector(
+    state => workflowSelectors.getReactFlowElements(
+      state,
+      WORKFLOW_TEMPLATE_ID,
+      updatingTransitionId,
+      onTransitionUpdate,
+      memoizedStates,
+      memoizedUpdateTransitionProgress,
+      memoizedActions
+    )
+  )
 
   const onPaneClick = (event) => {
     console.log('event', event)
