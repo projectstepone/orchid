@@ -1,4 +1,4 @@
-FROM node:9.4.0-alpine
+FROM node:16.4.2
 
 RUN apk update && apk upgrade && \
     apk add --no-cache git
