@@ -1,8 +1,11 @@
 import axios from 'axios'
-
+import { v4 as uuidv4 } from 'uuid'
 import * as workflowTypes from './workflow.types'
 
-const BASE_URL = 'http://localhost:9090'
+import * as workflowSelectors from '../../redux/workflow/workflow.selectors'
+
+const BASE_URL = 'http://localhost:8080'
+// const BASE_URL = 'http://internal-statesman-internal-alb-1825343678.ap-south-1.elb.amazonaws.com'
 
 export const fetchWorkflowTemplates = () => {
   return (dispatch) => {
@@ -154,13 +157,13 @@ export const createTransition = (workflowTemplateId, transition) => {
   }
 }
 
-export const createTransitions = (workflowTemplateId, transitions, referenceId) => {
+export const createTransitions = (workflowTemplateId, transitions, templateName) => {
   return (dispatch) => {
     dispatch({
       "type": workflowTypes.CREATE_TRANSITIONS_IN_PROGRESS,
       "payload": {
         workflowTemplateId,
-        "transitionId": referenceId
+        templateName
       }
     })
     axios.post(`${BASE_URL}/v1/templates/workflow/${workflowTemplateId}/transitions`, transitions)
@@ -169,14 +172,15 @@ export const createTransitions = (workflowTemplateId, transitions, referenceId) 
         "type": workflowTypes.CREATE_TRANSITIONS_COMPLETED,
         "payload": { 
           workflowTemplateId,
-          "transitionId": referenceId
+          templateName
         }
       })
       dispatch({
         "type": workflowTypes.FETCH_WORKFLOW_TRANSITIONS_COMPLETED,
         "payload": {
           workflowTemplateId,
-          transitions: transitions,
+          templateName,
+          transitions
         }
       })
     })
@@ -186,15 +190,29 @@ export const createTransitions = (workflowTemplateId, transitions, referenceId) 
         "type": workflowTypes.CREATE_TRANSITIONS_FAILED,
         "payload": { 
           workflowTemplateId,
-          "transitionId": referenceId
+          templateName
         }
       })
     })
   }
 }
 
-export const createWorkflowTemplate = (workflowTemplate) => {
-  return (dispatch) => {
+export const createWorkflowTemplate = (payload) => {
+  return (dispatch, getState) => {
+    let workflowTemplate = { ...payload }
+    const copy = "templateName" in workflowTemplate && workflowTemplate['templateName'] !== undefined
+    let templateName = ""
+    let transitions = []
+    let copyWorkflowTemplate = null
+    if (copy) {
+      templateName = workflowTemplate["templateName"]
+      delete workflowTemplate["templateName"]
+      copyWorkflowTemplate = workflowSelectors.workflowTemplateByTemplateName(getState(), templateName)
+      transitions = workflowSelectors.transitionsByWorkflowTemplateId(getState(), copyWorkflowTemplate.id).map(template => ({
+        ...template,
+        id: uuidv4()
+      }))
+    }
     dispatch({
       "type": workflowTypes.CREATE_WORKFLOW_TEMPLATE_IN_PROGRESS,
       "payload": {
@@ -215,6 +233,9 @@ export const createWorkflowTemplate = (workflowTemplate) => {
           workflowTemplateName: workflowTemplate.name
         }
       })
+      if (copy) {
+        dispatch(createTransitions(response.data.id, transitions, templateName))
+      }
     })
     .catch(err => {
       console.log("err in createWorkflowTemplate", err)
@@ -222,6 +243,111 @@ export const createWorkflowTemplate = (workflowTemplate) => {
         "type": workflowTypes.CREATE_WORKFLOW_TEMPLATE_FAILED,
         "payload": { 
           workflowTemplateName: workflowTemplate.name
+        }
+      })
+    })
+  }
+}
+
+export const updateWorkflowTemplate = (workflowTemplate) => {
+  return (dispatch) => {
+    dispatch({
+      "type": workflowTypes.UPDATE_WORKFLOW_TEMPLATE_IN_PROGRESS,
+      "payload": {
+        templateId: workflowTemplate.id
+      }
+    })
+    axios.put(`${BASE_URL}/v1/templates/workflow`, workflowTemplate)
+    .then(response => {
+      dispatch({
+        "type": workflowTypes.UPDATE_WORKFLOW_TEMPLATE_COMPLETED,
+        "payload": {
+          templateId: workflowTemplate.id
+        }
+      })
+      dispatch({
+        "type": workflowTypes.FETCH_WORKFLOW_TEMPLATES_COMPLETED,
+        "payload": { 
+          workflowTemplates: [workflowTemplate] 
+        }
+      })
+    })
+    .catch(err => {
+      console.log("err in updateWorkflowTemplate", err)
+      dispatch({
+        "type": workflowTypes.UPDATE_WORKFLOW_TEMPLATE_FAILED,
+        "payload": { 
+          templateId: workflowTemplate.id
+        }
+      })
+    })
+  }
+}
+
+export const createWorkflowAction = (action) => {
+  return (dispatch) => {
+    dispatch({
+      "type": workflowTypes.CREATE_WORKFLOW_ACTION_IN_PROGRESS,
+      "payload": {
+        action
+      }
+    })
+    axios.post(`${BASE_URL}/v1/templates/action`, action)
+    .then(response => {
+      dispatch({
+        "type": workflowTypes.FETCH_WORKFLOW_ACTIONS_COMPLETED,
+        "payload": {
+          actions: [response.data]
+        }
+      })
+      dispatch({
+        "type": workflowTypes.CREATE_WORKFLOW_ACTION_COMPLETED,
+        "payload": { 
+          action
+        }
+      })
+    })
+    .catch(err => {
+      console.log("err in createWorkflowAction", err)
+      dispatch({
+        "type": workflowTypes.CREATE_WORKFLOW_ACTION_FAILED,
+        "payload": { 
+          action
+        }
+      })
+    })
+  }
+}
+
+export const updateWorkflowAction = (action) => {
+  return (dispatch) => {
+    dispatch({
+      "type": workflowTypes.UPDATE_WORKFLOW_ACTION_IN_PROGRESS,
+      "payload": {
+        action
+      }
+    })
+    axios.put(`${BASE_URL}/v1/templates/action`, action)
+    .then(response => {
+      dispatch({
+        "type": workflowTypes.UPDATE_WORKFLOW_ACTION_COMPLETED,
+        "payload": {
+          action
+        }
+      })
+      dispatch({
+        "type": workflowTypes.FETCH_WORKFLOW_ACTIONS_COMPLETED,
+        "payload": { 
+          actions: [action]
+        }
+      })
+    })
+    .catch(err => {
+      console.log("err in updateWorkflowAction", err)
+      dispatch({
+        "type": workflowTypes.UPDATE_WORKFLOW_ACTION_FAILED,
+        "payload": { 
+          action
         }
       })
     })

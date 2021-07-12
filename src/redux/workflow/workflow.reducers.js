@@ -15,7 +15,10 @@ const initialState = {
   workflowActionsById: {},
   transitionUpdateProgress: {},
   transitionCreateProgress: {},
-  workflowTemplateCreateProgress: {}
+  workflowTemplateCreateProgress: {},
+  workflowTemplateUpdateProgress: {},
+  actionCreateProgress: {},
+  actionUpdateProgress: {}
 }
 
 const workflowTemplateFetchInProgress = (state, action) => {
@@ -172,6 +175,90 @@ export const createWorkflowTemplateFailed = (state, { payload: { workflowTemplat
   })
 }
 
+// workflowTemplateUpdateProgress
+export const updateWorkflowTemplateInProgress = (state, { payload: { templateId }}) => {
+  return produce(state, draftState => {
+    draftState['workflowTemplateUpdateProgress'][templateId] = {
+      ...DEFAULT_ACTION_PROGRESS,
+      processing: true
+    }
+  })
+}
+
+export const updateWorkflowTemplateCompleted = (state, { payload: { templateId }}) => {
+  return produce(state, draftState => {
+    draftState['workflowTemplateUpdateProgress'][templateId] = {
+      ...DEFAULT_ACTION_PROGRESS,
+      completed: true
+    }
+  })
+}
+
+export const updateWorkflowTemplateFailed = (state, { payload: { templateId }}) => {
+  return produce(state, draftState => {
+    draftState['workflowTemplateUpdateProgress'][templateId] = {
+      ...DEFAULT_ACTION_PROGRESS,
+      failed: true
+    }
+  })
+}
+
+// create workflowAction
+const createWorkflowActionInProgress = (state, { payload: { action }}) => {
+  return produce(state, draftState => {
+    draftState['actionCreateProgress'][action.templateId] = {
+      ...DEFAULT_ACTION_PROGRESS,
+      processing: true
+    }
+  })
+}
+
+const createWorkflowActionCompleted = (state, { payload: { action }}) => {
+  return produce(state, draftState => {
+    draftState['actionCreateProgress'][action.templateId] = {
+      ...DEFAULT_ACTION_PROGRESS,
+      completed: true
+    }
+  })
+}
+
+const createWorkflowActionFailed = (state, { payload: { action }}) => {
+  return produce(state, draftState => {
+    draftState['actionCreateProgress'][action.templateId] = {
+      ...DEFAULT_ACTION_PROGRESS,
+      failed: true
+    }
+  })
+}
+
+// update workflowAction
+const updateWorkflowActionInProgress = (state, { payload: { action }}) => {
+  return produce(state, draftState => {
+    draftState['actionUpdateProgress'][action.templateId] = {
+      ...DEFAULT_ACTION_PROGRESS,
+      processing: true
+    }
+  })
+}
+
+const updateWorkflowActionCompleted = (state, { payload: { action }}) => {
+  return produce(state, draftState => {
+    draftState['actionUpdateProgress'][action.templateId] = {
+      ...DEFAULT_ACTION_PROGRESS,
+      completed: true
+    }
+  })
+}
+
+const updateWorkflowActionFailed = (state, { payload: { action }}) => {
+  return produce(state, draftState => {
+    draftState['actionUpdateProgress'][action.templateId] = {
+      ...DEFAULT_ACTION_PROGRESS,
+      failed: true
+    }
+  })
+}
+
 const handlers = {
   [workflowTypes.FETCH_WORKFLOW_TEMPLATES_IN_PROGRESS]: workflowTemplateFetchInProgress,
   [workflowTypes.FETCH_WORKFLOW_TEMPLATES_FAILED]: workflowTemplateFetchFailed,
@@ -196,6 +283,18 @@ const handlers = {
   [workflowTypes.CREATE_WORKFLOW_TEMPLATE_IN_PROGRESS]: createWorkflowTemplateInProgress,
   [workflowTypes.CREATE_WORKFLOW_TEMPLATE_COMPLETED]: createWorkflowTemplateCompleted,
   [workflowTypes.CREATE_WORKFLOW_TEMPLATE_FAILED]: createWorkflowTemplateFailed,
+
+  [workflowTypes.UPDATE_WORKFLOW_TEMPLATE_IN_PROGRESS]: updateWorkflowTemplateInProgress,
+  [workflowTypes.UPDATE_WORKFLOW_TEMPLATE_COMPLETED]: updateWorkflowTemplateCompleted,
+  [workflowTypes.UPDATE_WORKFLOW_TEMPLATE_FAILED]: updateWorkflowTemplateFailed,
+
+  [workflowTypes.CREATE_WORKFLOW_ACTION_IN_PROGRESS]: createWorkflowActionInProgress,
+  [workflowTypes.CREATE_WORKFLOW_ACTION_COMPLETED]: createWorkflowActionCompleted,
+  [workflowTypes.CREATE_WORKFLOW_ACTION_FAILED]: createWorkflowActionFailed,
+
+  [workflowTypes.UPDATE_WORKFLOW_ACTION_IN_PROGRESS]: updateWorkflowActionInProgress,
+  [workflowTypes.UPDATE_WORKFLOW_ACTION_COMPLETED]: updateWorkflowActionCompleted,
+  [workflowTypes.UPDATE_WORKFLOW_ACTION_FAILED]: updateWorkflowActionFailed,
 }
 
 export default (state = initialState, action) => {

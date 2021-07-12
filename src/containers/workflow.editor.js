@@ -3,7 +3,7 @@ import { produce } from 'immer'
 import ReactFlow, { removeElements, addEdge, Background, MiniMap, Controls } from 'react-flow-renderer'
 import { useSelector, useDispatch } from 'react-redux';
 import Popover from '@material-ui/core/Popover'
-import { MenuItem, TextField, Button } from '@material-ui/core'
+import { MenuItem, TextField, Button, Paper } from '@material-ui/core'
 
 import {
   useParams,
@@ -44,17 +44,9 @@ const WorkflowEditor = () => {
   const createTransitionProgress = useSelector(state => workflowSelectors.getTransitionCreateProgress(state, workflowTemplateId, creatingTransitionId))
   const workflowStates = useSelector(state => workflowSelectors.getAllStates(state, workflowTemplateId))
   const workflowAllActions = useSelector(state => workflowSelectors.getAllActions(state))
-  const workflowTemplate = useSelector(state => workflowSelectors.getWorkflowTemplate(state, workflowTemplateId))
 
   const snackbarValue = React.useContext(SnackbarContext)
   const { showSuccess, showError } = snackbarValue
-
-  useEffect(() => {
-    dispatch(breadcrumbActions.pushBreadcrumb({
-      title: workflowTemplate.name,
-      link: match.url
-    }))
-  }, [dispatch, workflowTemplate.name, match.url])
 
   const memoizedStates = useMemo(() => {
     return workflowStates
@@ -171,7 +163,7 @@ const WorkflowEditor = () => {
   console.log('selectedState', selectedState)
 
   return (
-    <div id="editor" style={{ width: '100%', height: '90vh' }}>
+    <div id="editor" style={{ width: '100%', height: '80vh', maringBottom: '2%', marginTop: 10 }}>
       <Popover
         anchorReference="anchorPosition"
         anchorPosition={{
@@ -191,7 +183,7 @@ const WorkflowEditor = () => {
           setAddTransition(false)
         }}
       >
-        <MenuItem onClick={handleAddTransition}>Add Transition</MenuItem>
+        <MenuItem style={{ padding: 20 }} onClick={handleAddTransition}>Add Transition</MenuItem>
       </Popover>
       <ReactFlow
         style={{

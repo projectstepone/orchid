@@ -7,8 +7,11 @@ import {
 
 import { 
   Container, List, ListItem, Divider, Fab, Modal,
-  TextField, Button, FormControlLabel, Checkbox
+  TextField, Button, FormControlLabel, Checkbox, ListItemText,
+  ListItemSecondaryAction, IconButton
 } from '@material-ui/core'
+
+import MoreVert from '@material-ui/icons/MoreVert'
 
 import { makeStyles } from '@material-ui/core/styles'
 import AddIcon from '@material-ui/icons/Add';
@@ -16,11 +19,13 @@ import AddIcon from '@material-ui/icons/Add';
 import { useSelector, useDispatch } from 'react-redux';
 import * as workflowSelectors from '../redux/workflow/workflow.selectors'
 import * as workflowActions from '../redux/workflow/workflow.actions'
-import * as breadcrumbActions from '../redux/breadcrumb/breadcrumb.actions'
 
 import { SnackbarContext } from '../components/notification/SnackbarProvider'
 
+import WorkflowTemplateEditor from '../components/workflow.template.editor'
+
 const DEFAULT_WORKFLOW_TEMPLATE = {
+  "id": "",
   "name": "",
   "active": true,
   "rules": [
@@ -38,25 +43,22 @@ const WorkflowTemplates = () => {
   const styles = useStyles()
   const [createTemplate, setCreateTemplate] = useState(false)
   const [creatingTemplate, setCreatingTemplate] = useState(false)
-  const [workflowTemplate, setWorkflowTemplate] = useState(JSON.parse(JSON.stringify(DEFAULT_WORKFLOW_TEMPLATE)))
+  const [updateModal, setUpdateModal] = useState(false)
+  const [updatingTemplate, setUpdatingTemplate] = useState(false)
+  const [updatedWorkflowTemplate, setUpdatedWorkflowTemplate] = useState(DEFAULT_WORKFLOW_TEMPLATE)
+  const [workflowTemplate, setWorkflowTemplate] = useState(DEFAULT_WORKFLOW_TEMPLATE)
   const workflowTemplates = useSelector(state => workflowSelectors.getWorkflowTemplates(state))
   const workflowTemplateCreateProgress = useSelector(state => workflowSelectors.getWorkflowCreateProgress(state, workflowTemplate.name))
+  const workflowTemplateUpdateProgress = useSelector(state => workflowSelectors.getWorkflowUpdateProgress(state, updatedWorkflowTemplate.id))
   const snackbarValue = React.useContext(SnackbarContext)
   const { showSuccess, showError } = snackbarValue
 
+  // create template notification
   useEffect(() => {
-    dispatch(breadcrumbActions.pushBreadcrumb({
-      title: "Workflow Templates",
-      link: match.url
-    }))
-  }, [dispatch, match.url])
-
-  useEffect(() => {
-
     if (creatingTemplate) {
       if (workflowTemplateCreateProgress.completed) {
         setCreatingTemplate(false)
-        setWorkflowTemplate(JSON.parse(JSON.stringify(DEFAULT_WORKFLOW_TEMPLATE)))
+        setWorkflowTemplate(DEFAULT_WORKFLOW_TEMPLATE)
         showSuccess("Workflow template created")
       }
       if (workflowTemplateCreateProgress.failed) {
@@ -67,29 +69,21 @@ const WorkflowTemplates = () => {
 
   }, [creatingTemplate, workflowTemplateCreateProgress])
 
-  const onTemplateNameChange = (event) => {
-    setWorkflowTemplate(produce(workflowTemplate, draft => {
-      draft.name = event.target.value
-    }))
-  }
+  // update template notification
+  useEffect(() => {
+    if (updatingTemplate) {
+      if (workflowTemplateUpdateProgress.completed) {
+        setUpdatingTemplate(false)
+        setUpdatedWorkflowTemplate(DEFAULT_WORKFLOW_TEMPLATE)
+        showSuccess("Workflow template updated")
+      }
+      if (workflowTemplateUpdateProgress.failed) {
+        setUpdatingTemplate(false)
+        showError("Workflow template update failed")
+      }
+    }
 
-  const onTemplateActiveChange = () => {
-    setWorkflowTemplate(produce(workflowTemplate, draft => {
-      draft.active = !draft.active
-    }))
-  }
-
-  const onStartStateChange = (event) => {
-    setWorkflowTemplate(produce(workflowTemplate, draft => {
-      draft.startState.name = event.target.value
-    }))
-  }
-
-  const onRuleChange = (event) => {
-    setWorkflowTemplate(produce(workflowTemplate, draft => {
-      draft.rules[0] = event.target.value
-    }))
-  }
+  }, [updatingTemplate, workflowTemplateUpdateProgress])
 
   const onCreateWorkflowTemplate = () => {
     setCreatingTemplate(true)
@@ -99,23 +93,45 @@ const WorkflowTemplates = () => {
     }, 2000)
   }
 
+  const onUpdateWorkflowTemplate = () => {
+    setUpdatingTemplate(true)
+    dispatch(workflowActions.updateWorkflowTemplate(updatedWorkflowTemplate))
+    setTimeout(() => {
+      setUpdatingTemplate(false)
+    }, 2000)
+  }
+
   const onCancelEdit = () => {
-    setWorkflowTemplate(JSON.parse(JSON.stringify(DEFAULT_WORKFLOW_TEMPLATE)))
+    setWorkflowTemplate(DEFAULT_WORKFLOW_TEMPLATE)
     setCreateTemplate(false)
   }
 
+  const onUpdateClick = (workflowTemplate) => {
+    setUpdatedWorkflowTemplate(workflowTemplate)
+    setUpdateModal(true)
+  }
+
+  const onCancelUpdate = () => {
+    setUpdatedWorkflowTemplate(DEFAULT_WORKFLOW_TEMPLATE)
+    setUpdateModal(false)
+  }
+
+  const CustomLink = props => <Link to={props.to} {...props} />
+
   return (
-    <Container maxWidth="sm">
+    <Container maxWidth="lg">
       <List>
       {
-        workflowTemplates.map(workflowTemplate => {
+        workflowTemplates.map((workflowTemplate, i)=> {
           return (
-            <>
-              <ListItem>
-                <Link to={`${match.url}/${workflowTemplate.id}`} className={styles.link}>{ workflowTemplate.name }</Link>
+              <ListItem key={"workflow-template-" + i} button component={ props => <CustomLink to={`${match.url}/${workflowTemplate.id}`} {...props} style={{ textAlign: 'center' }} /> }>
+                <ListItemText primary={workflowTemplate.name}/>
+                <ListItemSecondaryAction>
+                  <IconButton edge="end" aria-label="more" onClick={() => onUpdateClick(workflowTemplate)}>
+                    <MoreVert />
+                  </IconButton>
+                </ListItemSecondaryAction>
               </ListItem>
-              <Divider />
-            </>
           )
         })
       }
@@ -132,68 +148,69 @@ const WorkflowTemplates = () => {
           style={{
             top: `${50}%`,
             left: `${50}%`,
-            transform: `translate(-${50}%, -${50}%)`
+            transform: `translate(-${50}%, -${50}%)`,
+            maxHeight: 500,
+            overflow: 'scroll'
           }}
         >
-          <h3>Workflow Template</h3>
-          <TextField
-            className={styles.textField}
-            label={"Name"}
-            value={workflowTemplate.name}
-            disabled={creatingTemplate}
-            onChange={onTemplateNameChange}
+          <WorkflowTemplateEditor 
+            workflowTemplate={workflowTemplate}
+            setWorkflowTemplate={setWorkflowTemplate}
+            creatingTemplate={creatingTemplate}
+            updatingTemplate={updatingTemplate}
+            update={false}
+            create={true}
+            workflowTemplates={workflowTemplates}
           />
-          <FormControlLabel
-            className={styles.textField}
-            control={
-              <Checkbox
-                checked={workflowTemplate.active}
-                name="active_checkbox"
-                color="primary"
-                disabled={creatingTemplate}
-                onChange={onTemplateActiveChange}
-              />
+          <div style={{ display: 'flex', justifyContent: 'space-around' }}>
+            { 
+              <Button disabled={creatingTemplate} variant="contained" color="secondary" className={styles.button} onClick={onCancelEdit}>
+              { "CANCEL" }
+              </Button>
             }
-            label="is template active ?"
-          />
-          <TextField
-            className={styles.textField}
-            label={"startState"}
-            value={workflowTemplate.startState.name}
-            disabled={creatingTemplate}
-            onChange={onStartStateChange}
-          />
-          <FormControlLabel
-            className={styles.textField}
-            control={
-              <Checkbox
-                checked={false}
-                name="active_checkbox"
-                color="primary"
-                disabled={creatingTemplate}
-              />
-            }
-            label="is terminal ?"
-          />
-          <TextField
-            className={styles.textField}
-            label={"Rule"}
-            multiline={true}
-            disabled={creatingTemplate}
-            value={workflowTemplate.rules[0]}
-            onChange={onRuleChange}
-          />
-          <Button variant="contained" disabled={creatingTemplate} color="primary" className={styles.textField} onClick={onCreateWorkflowTemplate}>
-            { "CREATE" }
-          </Button>
-          { 
-            <Button disabled={creatingTemplate} variant="contained" color="primary" className={styles.textField} onClick={onCancelEdit}>
-             { "CANCEL" }
+            <Button variant="contained" disabled={creatingTemplate} color="secondary" className={styles.button} onClick={onCreateWorkflowTemplate}>
+              { "CREATE" }
             </Button>
-          }
+          </div>
         </div>
       </Modal>
-      <Fab color="primary" aria-label="add" className={styles.fab} onClick={() => { setCreateTemplate(true) }}>
+      <Modal
+        open={updateModal}
+        onClose={onCancelUpdate}
+        aria-labelledby="simple-modal-title"
+        aria-describedby="simple-modal-description">
+        <div 
+          className={styles.paper}
+          style={{
+            top: `${50}%`,
+            left: `${50}%`,
+            transform: `translate(-${50}%, -${50}%)`,
+            maxHeight: 500,
+            overflow: 'scroll'
+          }}
+        >
+          <WorkflowTemplateEditor 
+            workflowTemplate={updatedWorkflowTemplate}
+            setWorkflowTemplate={setUpdatedWorkflowTemplate}
+            creatingTemplate={creatingTemplate}
+            updatingTemplate={updatingTemplate}
+            update={true}
+            create={false}
+            workflowTemplates={workflowTemplates}
+          />
+          <div style={{ display: 'flex', justifyContent: 'space-around' }}>
+            { 
+              <Button disabled={updatingTemplate} variant="contained" color="secondary" className={styles.button} onClick={onCancelUpdate}>
+              { "CANCEL" }
+              </Button>
+            }
+            <Button variant="contained" disabled={updatingTemplate} color="secondary" className={styles.button} onClick={onUpdateWorkflowTemplate}>
+              { "UPDATE" }
+            </Button>
+          </div>
+        </div>
+      </Modal>
+      <Fab color="secondary" aria-label="add" className={styles.fab} onClick={() => { setCreateTemplate(true) }}>
         <AddIcon />
       </Fab>
     </Container>
@@ -210,7 +227,7 @@ const useStyles = makeStyles((theme) => ({
     textAlign: 'center'
   },
   fab: {
-    position: 'absolute',
+    position: 'fixed',
     right: 30,
     bottom: 30
   },
@@ -225,6 +242,10 @@ const useStyles = makeStyles((theme) => ({
   textField: {
     "marginTop": theme.spacing(1),
     width: '100%'
+  },
+  button: {
+    "marginTop": theme.spacing(1),
+    width: 100
   }
 }))
 

@@ -5,18 +5,11 @@ const initialState = {
   breadcrumbs: []
 }
 
-const push = (state, { payload: { breadcrumb }}) => {
+const push = (state, { payload: { path }}) => {
   return produce(state, draftState => {
-    const len = draftState.breadcrumbs.filter(bc => {
-      if (bc.title === breadcrumb.title) {
-        return true
-      }
-      return false
-    }).length
-    if (len !== 0) {
-      draftState.breadcrumbs.pop()
-    } else {
-      draftState.breadcrumbs.push(breadcrumb)
+    const parts = path.split("/")
+    if(draftState.breadcrumbs.length < parts.length) {
+      
     }
   })
 }

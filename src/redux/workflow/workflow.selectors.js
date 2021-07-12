@@ -198,3 +198,40 @@ export const getWorkflowCreateProgress = (state, name) => {
     ...workflowTemplateCreateProgress[name]
   }
 }
+
+export const getWorkflowUpdateProgress = (state, templateId) => {
+  const workflowTemplateUpdateProgress = state.workflow.workflowTemplateUpdateProgress
+  if (!workflowTemplateUpdateProgress[templateId]) {
+    return DEFAULT_ACTION_PROGRESS
+  }
+  return workflowTemplateUpdateProgress[templateId]
+}
+
+export const getActionUpdateProgress = (state, templateId) => {
+  const actionUpdateProgress = state.workflow.actionUpdateProgress
+  if (!actionUpdateProgress[templateId]) {
+    return DEFAULT_ACTION_PROGRESS
+  }
+  return actionUpdateProgress[templateId]
+}
+
+export const getActionCreateProgress = (state, templateId) => {
+  const actionCreateProgress = state.workflow.actionCreateProgress
+  if (!actionCreateProgress[templateId]) {
+    return DEFAULT_ACTION_PROGRESS
+  }
+  return actionCreateProgress[templateId]
+}
+
+export const workflowTemplateByTemplateName = (state, templateName) => {
+  const workflowTemplatesById = state.workflow.workflowTemplatesById
+  return Object.keys(workflowTemplatesById).filter(templateId => workflowTemplatesById[templateId].name === templateName).map(templateId => workflowTemplatesById[templateId])[0]
+}
+
+export const transitionsByWorkflowTemplateId = (state, workflowTemplateId) => {
+  if (!state.workflow.transitionsByWorkflowTemplateId[workflowTemplateId]) {
+    return []
+  }
+  const transitionIds = Object.keys(state.workflow.transitionsByWorkflowTemplateId[workflowTemplateId])
+  return transitionIds.map(transitionId => state.workflow.workflowTransitionsById[transitionId]).filter(transition => transition !== undefined)
+}
