@@ -4,8 +4,8 @@ import * as workflowTypes from './workflow.types'
 
 import * as workflowSelectors from '../../redux/workflow/workflow.selectors'
 
-const BASE_URL = 'http://localhost:8080'
-// const BASE_URL = 'http://internal-statesman-internal-alb-1825343678.ap-south-1.elb.amazonaws.com'
+// const BASE_URL = 'http://localhost:8080'
+const BASE_URL = 'http://internal-statesman-internal-alb-1825343678.ap-south-1.elb.amazonaws.com'
 
 export const fetchWorkflowTemplates = () => {
   return (dispatch) => {
