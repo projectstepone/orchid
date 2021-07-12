@@ -48,21 +48,21 @@ const HttpAction = (props) => {
     }))
   }
 
-  const onPayloadChange = (event, payload) => {
+  const onPayloadChange = (event) => {
     setAction(produce(action, draftAction => {
-      draftAction.payload = payload
+      draftAction.payload = event.target.value
     }))
   }
 
-  const onHeaderChange = (event, headers) => {
+  const onHeaderChange = (event) => {
     setAction(produce(action, draftAction => {
-      draftAction.headers = headers
+      draftAction.headers = event.target.value
     }))
   }
 
-  const onResponseTranslatorChange = (event, responseTranslator) => {
+  const onResponseTranslatorChange = (event) => {
     setAction(produce(action, draftAction => {
-      draftAction.responseTranslator = responseTranslator
+      draftAction.responseTranslator = event.target.value
     }))
   }
 

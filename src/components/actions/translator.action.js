@@ -17,9 +17,9 @@ const TranslatorAction = (props) => {
   const styles = useStyles()
   const { action, setAction, creating, updating } = props
 
-  const onTranslatorChange = (event, value) => {
+  const onTranslatorChange = (event) => {
     setAction(produce(action, draftAction => {
-      draftAction.translator = value
+      draftAction.translator = event.target.value
     }))
   }
 
