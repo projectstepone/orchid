@@ -1,8 +1,5 @@
 FROM node:16.4.2-buster
 
-RUN apk update && apk upgrade && \
-    apk add --no-cache git
-
 RUN npm install -g serve
 
 EXPOSE 5000
