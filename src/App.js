@@ -61,7 +61,7 @@ function App() {
   const wfCounts = Object.keys(workflowTemplates).length
   useEffect(() => {
     dispatch(workflowActions.fetchWorkflowTemplates())
-    // dispatch(workflowActions.fetchWorkflowActions())
+    dispatch(workflowActions.fetchWorkflowActions())
   }, [dispatch])
 
   useEffect(() => {
