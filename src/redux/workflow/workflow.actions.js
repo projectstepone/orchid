@@ -4,7 +4,7 @@ import * as workflowTypes from './workflow.types'
 
 import * as workflowSelectors from '../../redux/workflow/workflow.selectors'
 
-const BASE_URL = 'http://localhost:8080'
+const BASE_URL = process.env.REACT_APP_ORCHID_HOST + "/api"
 
 export const fetchWorkflowTemplates = () => {
   return (dispatch) => {
@@ -25,7 +25,10 @@ export const fetchWorkflowTemplates = () => {
     .catch(err => {
       console.log("err in fetchWorkflowTemplates", err)
       dispatch({
-        "type": workflowTypes.FETCH_WORKFLOW_TEMPLATES_FAILED
+        "type": workflowTypes.FETCH_WORKFLOW_TEMPLATES_FAILED,
+        payload: {
+          err
+        }
       })
     })
   }
@@ -50,7 +53,10 @@ export const fetchWrokflowTransitions = (workflowTemplateId) => {
     .catch(err => {
       console.log("err in fetchWorkflowTemplates", err)
       dispatch({
-        "type": workflowTypes.FETCH_WORKFLOW_TEMPLATES_FAILED
+        "type": workflowTypes.FETCH_WORKFLOW_TEMPLATES_FAILED,
+        payload: {
+          err
+        }
       })
     })
   }
@@ -72,7 +78,10 @@ export const fetchWorkflowActions = () => {
     .catch(err => {
       console.log("err in fetchWorkflowActions", err)
       dispatch({
-        "type": workflowTypes.FETCH_WORKFLOW_ACTIONS_FAILED
+        "type": workflowTypes.FETCH_WORKFLOW_ACTIONS_FAILED,
+        payload: {
+          err
+        }
       })
     })
   }
@@ -110,7 +119,8 @@ export const updateTransition = (workflowTemplateId, transition) => {
         "type": workflowTypes.UPDATE_TRANSITION_FAILED,
         "payload": { 
           workflowTemplateId,
-          "transitionId": transition.id
+          "transitionId": transition.id,
+          err
         }
       })
     })
@@ -149,7 +159,8 @@ export const createTransition = (workflowTemplateId, transition) => {
         "type": workflowTypes.CREATE_TRANSITIONS_FAILED,
         "payload": { 
           workflowTemplateId,
-          "transitionId": transition.id
+          "transitionId": transition.id,
+          err
         }
       })
     })
@@ -189,7 +200,8 @@ export const createTransitions = (workflowTemplateId, transitions, templateName)
         "type": workflowTypes.CREATE_TRANSITIONS_FAILED,
         "payload": { 
           workflowTemplateId,
-          templateName
+          templateName,
+          err
         }
       })
     })
@@ -242,7 +254,8 @@ export const createWorkflowTemplate = (payload) => {
         "type": workflowTypes.CREATE_WORKFLOW_TEMPLATE_FAILED,
         "payload": { 
           workflowTemplateName: workflowTemplate.name
-        }
+        },
+        err
       })
     })
   }
@@ -277,7 +290,8 @@ export const updateWorkflowTemplate = (workflowTemplate) => {
         "type": workflowTypes.UPDATE_WORKFLOW_TEMPLATE_FAILED,
         "payload": { 
           templateId: workflowTemplate.id
-        }
+        },
+        err
       })
     })
   }
@@ -312,7 +326,8 @@ export const createWorkflowAction = (action) => {
         "type": workflowTypes.CREATE_WORKFLOW_ACTION_FAILED,
         "payload": { 
           action
-        }
+        },
+        err
       })
     })
   }
@@ -347,7 +362,8 @@ export const updateWorkflowAction = (action) => {
         "type": workflowTypes.UPDATE_WORKFLOW_ACTION_FAILED,
         "payload": { 
           action
-        }
+        },
+        err
       })
     })
   }

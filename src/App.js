@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useEffect, useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
 import {
   BrowserRouter as Router,
   Route,
@@ -24,6 +24,8 @@ import SnackbarProvider from './components/notification/SnackbarProvider'
 
 import { Breadcrumbs, Container } from '@material-ui/core'
 // import Link from '@material-ui/core/Link'
+
+import PrivateRoute from './route/private.route'
 
 const tempId = "f3fea53e-b497-4b5c-b146-894c8eae51b1"
 
@@ -59,7 +61,7 @@ function App() {
   const wfCounts = Object.keys(workflowTemplates).length
   useEffect(() => {
     dispatch(workflowActions.fetchWorkflowTemplates())
-    dispatch(workflowActions.fetchWorkflowActions())
+    // dispatch(workflowActions.fetchWorkflowActions())
   }, [dispatch])
 
   useEffect(() => {
@@ -119,18 +121,18 @@ function App() {
               </Breadcrumbs>
             </div>
             <Switch style={{ flex: 1 }}>
-              <Route exact path="/">
+              <PrivateRoute exact path="/">
                 <Home />
-              </Route>
-              <Route exact path="/workflowTemplates">
+              </PrivateRoute>
+              <PrivateRoute exact path="/workflowTemplates">
                 <WorkflowTemplates />
-              </Route>
-              <Route exact path="/workflowActions">
+              </PrivateRoute>
+              <PrivateRoute exact path="/workflowActions">
                 <WorkflowActions />
-              </Route>
-              <Route path="/workflowTemplates/:workflowTemplateId">
+              </PrivateRoute>
+              <PrivateRoute path="/workflowTemplates/:workflowTemplateId">
                 <WorkflowEditor />
-              </Route>
+              </PrivateRoute>
             </Switch>
             <OSnackbar />
         </SnackbarProvider>

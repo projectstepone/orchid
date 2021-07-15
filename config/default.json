@@ -1,0 +1,13 @@
+{
+  "idman": {
+    "endpoint": "https://c74b6c49ab03.ngrok.io",
+    "clientId": "ORCHID",
+    "secret": "ae082643-37d8-420a-9726-810ca8b8e7f4"
+  },
+  "orchid": {
+    "endpoint": "https://592a5ede94d2.ngrok.io"
+  },
+  "statesman": {
+    "endpoint": "http://localhost:8080"
+  }
+}
