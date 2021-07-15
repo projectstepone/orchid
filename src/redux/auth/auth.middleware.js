@@ -13,10 +13,12 @@ export const authMiddleware = (store) => (next) => (action) => {
   }
   if (type.includes("FAILED")) {
     if (!action.payload) {
+      next(action)
       return
     }
     const  { err } = action.payload
     if (!err) {
+      next(action)
       return
     }
     const status = err.response.status
