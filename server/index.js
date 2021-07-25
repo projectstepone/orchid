@@ -7,7 +7,10 @@ const OAuth2Strategy = require('passport-oauth').OAuth2Strategy
 const cookieSession = require('cookie-session')
 const NodeCache = require('node-cache')
 const morgan = require('morgan')
-const config = require('../config/default.json')
+const configPath = process.env.CONFIG_PATH
+                    ? process.env.CONFIG_PATH
+                    : '../config/default.json'
+ const config = require(configPath)
 const { createProxyMiddleware } = require('http-proxy-middleware')
 const path = require("path")
 
