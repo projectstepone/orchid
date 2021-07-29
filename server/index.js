@@ -16,6 +16,17 @@ const path = require("path")
 
 const UNAUTHORIZED = 401
 
+// restream parsed body before proxying
+var restream = function(proxyReq, req, res, options) {
+  if (req.body) {
+      let bodyData = JSON.stringify(req.body)
+      proxyReq.setHeader('Content-Type','application/json')
+      proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData))
+      // stream the content
+      proxyReq.write(bodyData)
+  }
+}
+
 const proxyOptions = {
   target: config.statesman.endpoint,
   changeOrigin: true,
@@ -28,7 +39,8 @@ const proxyOptions = {
       proxyPath += filtered[i]
     }
     return proxyPath
-  }
+  },
+  onProxyReq: restream
 }
 
 const app = express()
@@ -40,7 +52,7 @@ app.use(morgan('tiny'))
 app.use(cookieSession({
     maxAge: 60 * 60 * 1000,
     keys: [ 'testkey' ]
-}));
+}))
 
 // Create a local cache to store authntication information temporarily
 // Don't make this too long ... the longer it is the risks are higher

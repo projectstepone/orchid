@@ -2,6 +2,8 @@ FROM node:16.4.2-buster
 
 EXPOSE 5000
 
+EXPOSE 8080
+
 COPY package.json package.json
 
 RUN npm install
