@@ -21,7 +21,7 @@ export const authMiddleware = (store) => (next) => (action) => {
       next(action)
       return
     }
-    const status = err.response.status
+    const status = err.response ? err.response.status : -1
     if (autoLogoutStatus.indexOf(status) !== -1) {
       console.log("Logging out user")
       store.dispatch(logout())

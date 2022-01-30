@@ -218,8 +218,8 @@ export const createWorkflowTemplate = (payload) => {
     if (copy) {
       templateName = workflowTemplate["templateName"]
       delete workflowTemplate["templateName"]
-      copyWorkflowTemplate = workflowSelectors.workflowTemplateByTemplateName(getState(), templateName)
-      transitions = workflowSelectors.transitionsByWorkflowTemplateId(getState(), copyWorkflowTemplate.id).map(template => ({
+      copyWorkflowTemplate = workflowSelectors.selectWorkflowTemplateByTemplateName(getState(), templateName)
+      transitions = workflowSelectors.selectTransitionsByWorkflowTemplateId(getState(), copyWorkflowTemplate.id).map(template => ({
         ...template,
         id: uuidv4()
       }))

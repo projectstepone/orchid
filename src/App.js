@@ -107,9 +107,9 @@ function App() {
           </Typography>
         </Toolbar>
       </AppBar>
-      <Container maxWidth="lg">
+      <Container maxWidth="xl">
           <SnackbarProvider>
-            <div style={{ marginTop: '10px' }}>
+            <div style={{ marginTop: '20px', marginBottom: 20 }}>
               <Breadcrumbs aria-label="breadcrumb">
               {
                 breadcrumbs.map((breadcrumb, i) => {
