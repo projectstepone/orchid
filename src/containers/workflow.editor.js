@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react'
+import React, { useState, useCallback, useEffect, useContext } from 'react'
 import { produce } from 'immer'
 import ReactFlow, { removeElements, addEdge, Background, MiniMap, Controls } from 'react-flow-renderer'
 import { useSelector, useDispatch } from 'react-redux';
@@ -40,25 +40,14 @@ const WorkflowEditor = () => {
   const [updatingTransitionId, setUpdatingTransitionId] = useState('')
   const [creatingTransition, setCreatingTransition] = useState(false)
   const [creatingTransitionId, setCreatingTransitionId] = useState('')
-  const updateTransitionProgress = useSelector(state => workflowSelectors.getTransitionUpdateProgress(state, workflowTemplateId, updatingTransitionId))
-  const createTransitionProgress = useSelector(state => workflowSelectors.getTransitionCreateProgress(state, workflowTemplateId, creatingTransitionId))
-  const workflowStates = useSelector(state => workflowSelectors.getAllStates(state, workflowTemplateId))
-  const workflowAllActions = useSelector(state => workflowSelectors.getAllActions(state))
+  const updateTransitionProgress = useSelector(state => workflowSelectors.selectTransitionUpdateProgressByTransitionId(state, workflowTemplateId, updatingTransitionId))
+  const createTransitionProgress = useSelector(state => workflowSelectors.selectTransitionCreateProgressByTransitionId(state, workflowTemplateId, creatingTransitionId))
+  const workflowStates = useSelector(state => workflowSelectors.selectStatesByWorkflowTemplateId(state, workflowTemplateId))
+  const workflowAllActions = useSelector(state => workflowSelectors.selectAllActions(state))
+  const elements = useSelector(state => workflowSelectors.selectReactFlowElements(state, workflowTemplateId, updatingTransitionId))
 
-  const snackbarValue = React.useContext(SnackbarContext)
+  const snackbarValue = useContext(SnackbarContext)
   const { showSuccess, showError } = snackbarValue
-
-  const memoizedStates = useMemo(() => {
-    return workflowStates
-  }, [workflowStates.length])
-
-  const memoizedActions = useMemo(() => {
-    return workflowAllActions
-  }, [workflowAllActions.length])
-
-  const memoizedUpdateTransitionProgress = useMemo(() => {
-    return updateTransitionProgress
-  }, [updateTransitionProgress])
 
   const onTransitionUpdate = useCallback((transition) => {
     const updatedTransition = produce(transition, draftTransition => {
@@ -118,18 +107,6 @@ const WorkflowEditor = () => {
     }
   }, [creatingTransition, createTransitionProgress])
 
-  const elements = useSelector(
-    state => workflowSelectors.getReactFlowElements(
-      state,
-      workflowTemplateId,
-      updatingTransitionId,
-      onTransitionUpdate,
-      memoizedStates,
-      memoizedUpdateTransitionProgress,
-      memoizedActions
-    )
-  )
-
   const onPaneClick = (event) => {
     console.log('event', event)
     setAddTransition(false)
@@ -163,7 +140,7 @@ const WorkflowEditor = () => {
   console.log('selectedState', selectedState)
 
   return (
-    <div id="editor" style={{ width: '100%', height: '80vh', maringBottom: '2%', marginTop: 10 }}>
+    <Paper id="editor" elevation={3} style={{ width: '100%', height: '80vh', maringBottom: '2%', marginTop: 10 }}>
       <Popover
         anchorReference="anchorPosition"
         anchorPosition={{
@@ -190,7 +167,12 @@ const WorkflowEditor = () => {
           flex: 1
         }}
         snapToGrid
-        elements={elements}
+        elements={elements.map(element => {
+          if (element.data.onTransitionUpdate) {
+            element.data.onTransitionUpdate = onTransitionUpdate
+          }
+          return element
+        })}
         onPaneClick={onPaneClick}
         onConnect={onConnect}
         onElementClick={onElementClick}
@@ -219,12 +201,12 @@ const WorkflowEditor = () => {
           "rule": ""
         }}
         createProgress={createTransitionProgress}
-        states={memoizedStates}
-        actions={memoizedActions}
+        states={workflowStates}
+        actions={workflowAllActions}
         create={true}
         onTransitionCreate={onTransitionCreate}
       />
-    </div>
+    </Paper>
   )
 }
 

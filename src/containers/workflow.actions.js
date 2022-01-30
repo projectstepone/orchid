@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import { produce } from 'immer'
 import {
   Link,
   useRouteMatch
 } from 'react-router-dom'
+
+import { throttle } from 'underscore'
 
 import { 
   Container, List, ListItem, Divider, Fab, Modal,
@@ -80,12 +82,10 @@ const WorkflowActions = () => {
   const [actionUpdating, setActionUpdating] = useState(false)
   const [term, setTerm] = useState("")
   const workflowActionsById = useSelector(state => state.workflow.workflowActionsById)
-  const actionCreateProgress = useSelector(state => workflowSelectors.getActionCreateProgress(state, action.templateId))
-  const actionUpdateProgress = useSelector(state => workflowSelectors.getActionUpdateProgress(state, editedAction.templateId))
-  const actionTemplates = Object.keys(workflowActionsById).map((id, i) => ({
-    title: workflowActionsById[id].templateId,
-  }))
-  const snackbarValue = React.useContext(SnackbarContext)
+  const actionCreateProgress = useSelector(state => workflowSelectors.selectActionCreateProgressByTemplateId(state, action.templateId))
+  const actionUpdateProgress = useSelector(state => workflowSelectors.selectActionUpdateProgressByTemplateId(state, editedAction.templateId))
+  const actionTemplates = useSelector(state => workflowSelectors.selectWorkflowActionTemplates(state))
+  const snackbarValue = useContext(SnackbarContext)
   const { showSuccess, showError } = snackbarValue
 
   const workflowActions = Object.keys(workflowActionsById)
@@ -116,7 +116,6 @@ const WorkflowActions = () => {
         showError("Action creation failed")
       }
     }
-
   }, [actionCreating, actionCreateProgress])
 
   // create template notification
@@ -165,9 +164,9 @@ const WorkflowActions = () => {
     setEditedAction(DEFAULT_WORKFLOW_ACTION)
   }
 
-  const onTermChange = (event, value) => {
+  const onTermChange = throttle((event, value) => {
     setTerm(event.target.value)
-  }
+  }, 500)
 
   return (
     <Container maxWidth="lg">

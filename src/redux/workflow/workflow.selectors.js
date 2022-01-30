@@ -1,3 +1,7 @@
+import { createSelector } from 'reselect'
+
+import { forceSimulation, forceLink, forceCenter, forceManyBody, forceCollide } from 'd3-force'
+
 const DEFAULT_ACTION_PROGRESS = {
   processing: false,
   completed: false,
@@ -5,199 +9,379 @@ const DEFAULT_ACTION_PROGRESS = {
   message: ""
 }
 
-export const getRootNode = (state, workflowTemplateId) => {
-  const workflowTemplate = state.workflow.workflowTemplatesById[workflowTemplateId]
-  if (workflowTemplate) {
-    return {
-      name: workflowTemplate.startState.name,
-      state: workflowTemplate.startState.name,
-      rootNode: true,
-      terminal: workflowTemplate.startState.terminal
+const selectWorkflowTemplatesByIds = state => state.workflow.workflowTemplatesById
+
+const selectWorkflowActionsByIds = state => state.workflow.workflowActionsById
+
+const selectTransitionsByWorkflowTemplateIds = state => state.workflow.transitionsByWorkflowTemplateId
+
+const selectWorkflowTransitionsByIds = state => state.workflow.workflowTransitionsById
+
+const selectActionCreateProgress = state => state.workflow.actionCreateProgress
+
+const selectActionUpdateProgress = state => state.workflow.actionUpdateProgress
+
+const selectTransitionUpdateProgress = state => state.workflow.transitionUpdateProgress
+
+const selectTransitionCreateProgress = state => state.workflow.transitionCreateProgress
+
+const selectWorkflowTemplateUpdateProgress = state => state.workflow.workflowTemplateUpdateProgress
+
+const selectWorkflowTemplateCreateProgress = state => state.workflow.workflowTemplateCreateProgress
+
+export const selectWorkflowTemplateById = createSelector(
+  [
+    selectWorkflowTemplatesByIds,
+    (_, id) => id
+  ],
+  (workflowTemplatesByIds, id) => {
+    return workflowTemplatesByIds[id]
+  }
+)
+
+export const selectWorkflowTemplates = createSelector(
+  [
+    selectWorkflowTemplatesByIds
+  ],
+  (workflowTemplatesByIds) => {
+    return Object.keys(workflowTemplatesByIds).map(id => workflowTemplatesByIds[id])
+  }
+)
+
+export const selectWorkflowActionById = createSelector(
+  [
+    selectWorkflowActionsByIds,
+    (_, id) => id
+  ],
+  (workflowActionsByIds, id) => {
+    return workflowActionsByIds[id]
+  }
+)
+
+export const selectWorkflowActions = createSelector(
+  [
+    selectWorkflowActionsByIds
+  ],
+  (workflowActionsByIds) => {
+    return Object.keys(workflowActionsByIds).map(id => workflowActionsByIds[id])
+  }
+)
+
+export const selectWorkflowActionTemplates = createSelector(
+  [
+    selectWorkflowActionsByIds
+  ],
+  (workflowActionsByIds) => {
+    return Object.keys(workflowActionsByIds).map(id => ({ title: id }))
+  }
+)
+
+export const selectTransitionsByWorkflowTemplateId = createSelector(
+  [
+    selectTransitionsByWorkflowTemplateIds,
+    (_, workflowTemplateId) => workflowTemplateId,
+    selectWorkflowTransitionsByIds
+  ],
+  (transitionsByWorkflowTemplateIds, workflowTemplateId, workflowTransitionsByIds) => {
+    if (transitionsByWorkflowTemplateIds[workflowTemplateId]) {
+      const transitionIds = Object.keys(transitionsByWorkflowTemplateIds[workflowTemplateId])
+      return transitionIds.map(transitionId => workflowTransitionsByIds[transitionId])
+        .filter(transition => transition !== undefined)
     }
-  }
-  return {
-    name: 'NA',
-    state: 'NA',
-    rootNode: false,
-    terminal: false
-  }
-}
-
-export const getEdges = (state, workflowTemplateId, startState) => {
-  if (!state.workflow.transitionsByWorkflowTemplateId[workflowTemplateId]) {
     return []
   }
-  const transitionIds = Object.keys(state.workflow.transitionsByWorkflowTemplateId[workflowTemplateId])
-  const transitions = transitionIds.map(transitionId => state.workflow.workflowTransitionsById[transitionId]).filter(transition => transition !== undefined)
-  return transitions.filter(transition => transition.fromState === startState)
-}
+)
 
-export const getChildNodes = (state, workflowTemplateId, startState) => {
-  if (!state.workflow.transitionsByWorkflowTemplateId[workflowTemplateId]) {
-    return []
-  }
-  const transitionIds = Object.keys(state.workflow.transitionsByWorkflowTemplateId[workflowTemplateId])
-  const transitions = transitionIds.map(transitionId => state.workflow.workflowTransitionsById[transitionId]).filter(transition => transition !== undefined)
-  return transitions.filter(transition => transition.fromState === startState).map(transition => {
+export const selectRootNode = createSelector(
+  [
+    selectWorkflowTemplateById,    
+  ],
+  (workflowTemplate) => {
+    if (workflowTemplate) {
+      return {
+        name: workflowTemplate.startState.name,
+        state: workflowTemplate.startState.name,
+        rootNode: true,
+        terminal: workflowTemplate.startState.terminal
+      }
+    }
     return {
-      name: transition.toState.name,
-      state: transition.toState.name,
+      name: 'NA',
+      state: 'NA',
       rootNode: false,
-      terminal: transition.toState.terminal
+      terminal: false
     }
-  })
-}
-
-export const getAllActions = (state) => {
-  const workflowActionsById = state.workflow.workflowActionsById
-  return Object.keys(workflowActionsById).map(action => ({ id: action }))
-}
-
-export const getAllStates = (state, workflowTemplateId) => {
-  const rootNode = getRootNode(state, workflowTemplateId)
-  if (!rootNode.rootNode) {
-    return []
   }
-  let queue = []
-  const visitedNode = {}
-  queue.push(rootNode)
-  let states = []
-  while (queue.length !== 0) {
-    let qSize = queue.length
-    while (qSize != 0) {
-      const visitingNode = queue.shift()
-      if (!(visitingNode.name in visitedNode)) {
-        const childNodes = getChildNodes(state, workflowTemplateId, visitingNode.state)
-        queue = queue.concat(childNodes)
-        visitedNode[visitingNode.name] = true
-        states.push({
-          name: visitingNode.name,
-          state: visitingNode.name,
-          terminal: visitingNode.terminal
-        })
+)
+
+export const selectOutgoingTransitions = createSelector(
+  [
+    (state, workflowTemplateId, fromState) => fromState,
+    selectTransitionsByWorkflowTemplateId,
+  ],
+  (fromState, transitions) => {
+    return transitions.filter(transition => transition.fromState === fromState)
+  }
+)
+
+export const selectChildNodes = createSelector(
+  [
+    selectOutgoingTransitions,
+  ],
+  (outgoingTransitions) => {
+    return outgoingTransitions.map(transition => {
+      return {
+        name: transition.toState.name,
+        state: transition.toState.name,
+        rootNode: false,
+        terminal: transition.toState.terminal
       }
-      qSize--
-    }
+    })
   }
-  return states
-}
+)
 
-export const getReactFlowElements = (
-  state, workflowTemplateId, updatingTransitionId, 
-  onTransitionUpdate, memoizedStates,
-  memoizedUpdateTransitionProgress, memoizedActions) => {
-  
-  let dx = 0
-  let dy = 100
-  const elements = []
-  const rootNode = getRootNode(state, workflowTemplateId)
-  if (!rootNode.rootNode) {
-    return []
+export const selectAllActions = createSelector(
+  [
+    selectWorkflowActionsByIds
+  ],
+  (workflowActionsByIds) => {
+    return Object.keys(workflowActionsByIds).map(key => ({ id: key }))
   }
-  let queue = []
-  const visitedNode = {}
-  queue.push(rootNode)
-  let alternate = true
-  while (queue.length !== 0) {
-    let qSize = queue.length
-    dy = 100
-    while (qSize != 0) {
-      const visitingNode = queue.shift()
-      if (!(visitingNode.name in visitedNode)) {
-        elements.push({
-          id: visitingNode.name,
-          sourcePosition: 'right',
-          data: { label: visitingNode.name },
-          position: { x: dx, y: dy }
-        })
-        const childNodes = getChildNodes(state, workflowTemplateId, visitingNode.state)
-        queue = queue.concat(childNodes)
-        const edges = getEdges(state, workflowTemplateId, visitingNode.state)
-        edges.forEach(edge => {
-          elements.push({
-            id: edge.id,
-            source: visitingNode.name,
-            type: 'smoothstep',
-            target: edge.toState.name,
-            animated: edge.active,
-            type: 'custom',
-            data: {
-              transition: edge,
-              onTransitionUpdate,
-              updating: updatingTransitionId === edge.id,
-              states: memoizedStates,
-              updateProgress: updatingTransitionId === edge.id ?  memoizedUpdateTransitionProgress : {},
-              actions: memoizedActions
-            },
-            arrowHeadType: 'arrow'
+)
+
+export const selectStatesByWorkflowTemplateId = createSelector(
+  [
+    selectRootNode,
+    selectTransitionsByWorkflowTemplateId
+  ],
+  (rootNode, transitions) => {
+    let queue = []
+    const visitedNode = {}
+    queue.push(rootNode)
+    const states = []
+    while (queue.length !== 0) {
+      let qSize = queue.length
+      while (qSize !== 0) {
+        const visitingNode = queue.shift()
+        if (!(visitingNode.name in visitedNode)) {
+          const childNodes = transitions
+            .filter(transition => transition.fromState === visitingNode.state)
+            .map(transition => {
+              return {
+                name: transition.toState.name,
+                state: transition.toState.name,
+                rootNode: false,
+                terminal: transition.toState.terminal
+              }
+            })
+          queue = queue.concat(childNodes)
+          visitedNode[visitingNode.name] = true
+          states.push({
+            name: visitingNode.name,
+            state: visitingNode.state,
+            terminal: visitingNode.terminal,
+            rootNode: visitingNode.rootNode
           })
-        })
-        if (alternate) {
-          dy += 250
-        } else {
-          dy += 150
         }
-        visitedNode[visitingNode.name] = true
+        qSize--
       }
-      qSize--
     }
-    alternate = !alternate
-    dx += 600
+    return states
   }
-  return elements
-}
+)
 
-export const getTransitionUpdateProgress = (state, worflowTemplateId, transitionId) => {
-  const transitionUpdateProgress = state.workflow.transitionUpdateProgress
-  if (!transitionUpdateProgress[worflowTemplateId] || !transitionUpdateProgress[worflowTemplateId][transitionId]) {
-    return {
-      ...DEFAULT_ACTION_PROGRESS
+const selectSimulationNodes = createSelector(
+  [
+    selectTransitionsByWorkflowTemplateId
+  ],
+  (transitions) => {
+    const stateSet = new Set()
+    const nodes = []
+    transitions.forEach(transition => {
+      const fromState = transition['fromState']
+      const toState = transition['toState']['name']
+      if (!stateSet.has(fromState)) {
+        stateSet.add(fromState)
+        nodes.push({
+          id: fromState
+        })
+      }
+      if (!stateSet.has(toState)) {
+        stateSet.add(toState)
+        nodes.push({
+          id: toState
+        })
+      }
+    })
+    return nodes
+  }
+)
+
+const selectSimulationLinks = createSelector(
+  [
+    selectTransitionsByWorkflowTemplateId
+  ],
+  (transitions) => {
+    const links = []
+    transitions.forEach(transition => {
+      const fromState = transition['fromState']
+      const toState = transition['toState']['name']
+      links.push({
+        "source": fromState,
+        "target": toState
+      })
+    })
+    return links
+  }
+)
+
+export const selectSimulationResult = createSelector(
+  [
+    selectSimulationNodes,
+    selectSimulationLinks
+  ],
+  (nodes, links) => {
+    const simulation = forceSimulation(nodes)
+      .force("link", forceLink(links).id(d => d.id))
+      .force("center", forceCenter(window.screen.width/2, window.screen.height/2))
+      .force("charge", forceManyBody().strength(-100))
+      .force('collide', forceCollide().radius(300))
+      .stop()
+    simulation.tick(4)
+    simulation.stop()
+    const map = {}
+    simulation.nodes().forEach(node => {
+      map[node.id] = node
+    })
+    return map
+  }
+)
+
+export const selectTransitionUpdateProgressByTransitionId = createSelector(
+  [
+    selectTransitionUpdateProgress,
+    (_, worflowTemplateId, transitionId) => [worflowTemplateId, transitionId]
+  ],
+  (transitionUpdateProgress, [worflowTemplateId, transitionId]) => {
+    if (!transitionUpdateProgress[worflowTemplateId] || !transitionUpdateProgress[worflowTemplateId][transitionId]) {
+      return DEFAULT_ACTION_PROGRESS
     }
+    return transitionUpdateProgress[worflowTemplateId][transitionId]  
   }
-  return transitionUpdateProgress[worflowTemplateId][transitionId]
-}
+)
 
-export const getTransitionCreateProgress = (state, worflowTemplateId, transitionId) => {
-  const transitionCreateProgress = state.workflow.transitionCreateProgress
-  if (!transitionCreateProgress[worflowTemplateId] || !transitionCreateProgress[worflowTemplateId][transitionId]) {
-    return {
-      ...DEFAULT_ACTION_PROGRESS
+export const selectReactFlowElements = createSelector(
+  [
+    selectRootNode,
+    selectTransitionsByWorkflowTemplateId,
+    selectStatesByWorkflowTemplateId,
+    selectTransitionUpdateProgressByTransitionId,
+    selectAllActions,
+    selectSimulationResult,
+    (state, workflowTemplateId, transitionId) => transitionId
+  ],
+  (rootNode, transitions, states, progress, actions, positionMap, transitionId) => {
+    const elements = []
+    if (!rootNode.rootNode) {
+      return []
     }
-  }
-  return transitionCreateProgress[worflowTemplateId][transitionId]
-}
-
-export const getWorkflowTemplates = (state) => {
-  const workflowTemplatesById = state.workflow.workflowTemplatesById
-  return Object.keys(workflowTemplatesById)
-  .map(id => ({
-    ...workflowTemplatesById[id]
-  }))
-}
-
-export const getWorkflowTemplate = (state, templateId) => {
-  const workflowTemplatesById = state.workflow.workflowTemplatesById
-  if (!workflowTemplatesById[templateId]) {
-    return {
-      name: "Loading..."
+    let queue = []
+    const visitedNode = {}
+    queue.push(rootNode)
+    while (queue.length !== 0) {
+      let qSize = queue.length
+      while (qSize !== 0) {
+        const visitingNode = queue.shift()
+        if (!(visitingNode.name in visitedNode) && (visitingNode.name in positionMap)) {
+          elements.push({
+            id: visitingNode.name,
+            data: { label: visitingNode.name },
+            position: { x: positionMap[visitingNode.name].x, y: positionMap[visitingNode.name].y }
+          })
+          const childNodes = transitions
+            .filter(transition => transition.fromState === visitingNode.state)
+            .map(transition => {
+              return {
+                name: transition.toState.name,
+                state: transition.toState.name,
+                rootNode: false,
+                terminal: transition.toState.terminal
+              }
+            })
+          queue = queue.concat(childNodes)
+          const edges = transitions.filter(transition => transition.fromState === visitingNode.state)
+          edges.forEach(edge => {
+            elements.push({
+              id: edge.id,
+              source: visitingNode.name,
+              target: edge.toState.name,
+              animated: edge.active,
+              type: 'custom',
+              data: {
+                transition: edge,
+                onTransitionUpdate: () => {},
+                updating: transitionId === edge.id,
+                states: states,
+                updateProgress: transitionId === edge.id ? progress : {},
+                actions: actions
+              },
+              arrowHeadType: 'arrow'
+            })
+          })
+          visitedNode[visitingNode.name] = true
+        }
+        qSize--
+      }
     }
-  }
-  return {
-    ...workflowTemplatesById[templateId]
-  }
-}
-
-export const getWorkflowCreateProgress = (state, name) => {
-  const workflowTemplateCreateProgress = state.workflow.workflowTemplateCreateProgress
-  if (!workflowTemplateCreateProgress[name]) {
-    return {
-      ...DEFAULT_ACTION_PROGRESS
+    if (elements.length === 0) {
+      elements.push({
+        id: rootNode.name,
+        data: { label: rootNode.name },
+        position: { x: window.screen.width / 2, y: window.screen.height / 2 - 100 }
+      })
     }
+    return elements
   }
-  return {
-    ...workflowTemplateCreateProgress[name]
+)
+
+export const selectTransitionCreateProgressByTransitionId = createSelector(
+  [
+    selectTransitionCreateProgress,
+    (_, worflowTemplateId, transitionId) => [worflowTemplateId, transitionId]
+  ],
+  (transitionCreateProgress, [worflowTemplateId, transitionId]) => {
+    if (!transitionCreateProgress[worflowTemplateId] || !transitionCreateProgress[worflowTemplateId][transitionId]) {
+      return DEFAULT_ACTION_PROGRESS
+    }
+    return transitionCreateProgress[worflowTemplateId][transitionId]  
   }
-}
+)
+
+export const selectWorkflowCreateProgressByName = createSelector(
+  [
+    selectWorkflowTemplateCreateProgress,
+    (_, name) => name
+  ],
+  (workflowTemplateCreateProgress, name) => {
+    if (!workflowTemplateCreateProgress[name]) {
+      return DEFAULT_ACTION_PROGRESS
+    }
+    return workflowTemplateCreateProgress[name]
+  }
+)
+
+export const selectWorkflowUpdateProgressByTemplateId = createSelector(
+  [
+    selectWorkflowTemplateUpdateProgress,
+    (_, templateId) => templateId
+  ],
+  (workflowTemplateUpdateProgress, templateId) => {
+    if (!workflowTemplateUpdateProgress[templateId]) {
+      return DEFAULT_ACTION_PROGRESS
+    }
+    return workflowTemplateUpdateProgress[templateId]
+  }
+)
 
 export const getWorkflowUpdateProgress = (state, templateId) => {
   const workflowTemplateUpdateProgress = state.workflow.workflowTemplateUpdateProgress
@@ -207,31 +391,39 @@ export const getWorkflowUpdateProgress = (state, templateId) => {
   return workflowTemplateUpdateProgress[templateId]
 }
 
-export const getActionUpdateProgress = (state, templateId) => {
-  const actionUpdateProgress = state.workflow.actionUpdateProgress
-  if (!actionUpdateProgress[templateId]) {
-    return DEFAULT_ACTION_PROGRESS
+export const selectActionUpdateProgressByTemplateId = createSelector(
+  [
+    selectActionUpdateProgress,
+    (_, templateId) => templateId
+  ],
+  (actionUpdateProgress, templateId) => {
+    if (!actionUpdateProgress[templateId]) {
+      return DEFAULT_ACTION_PROGRESS
+    }
+    return actionUpdateProgress[templateId]
   }
-  return actionUpdateProgress[templateId]
-}
+)
 
-export const getActionCreateProgress = (state, templateId) => {
-  const actionCreateProgress = state.workflow.actionCreateProgress
-  if (!actionCreateProgress[templateId]) {
-    return DEFAULT_ACTION_PROGRESS
+export const selectActionCreateProgressByTemplateId = createSelector(
+  [
+    selectActionCreateProgress,
+    (_, templateId) => templateId
+  ],
+  (actionCreateProgress, templateId) => {
+    if (!actionCreateProgress[templateId]) {
+      return DEFAULT_ACTION_PROGRESS
+    }
+    return actionCreateProgress[templateId]
   }
-  return actionCreateProgress[templateId]
-}
+)
 
-export const workflowTemplateByTemplateName = (state, templateName) => {
-  const workflowTemplatesById = state.workflow.workflowTemplatesById
-  return Object.keys(workflowTemplatesById).filter(templateId => workflowTemplatesById[templateId].name === templateName).map(templateId => workflowTemplatesById[templateId])[0]
-}
-
-export const transitionsByWorkflowTemplateId = (state, workflowTemplateId) => {
-  if (!state.workflow.transitionsByWorkflowTemplateId[workflowTemplateId]) {
-    return []
+export const selectWorkflowTemplateByTemplateName = createSelector(
+  [
+    selectWorkflowTemplates,
+    (_, templateName) => templateName
+  ],
+  (worklfowTemplates, templateName) => {
+    return worklfowTemplates
+      .filter(workflowTemplate => workflowTemplate.name === templateName)[0]
   }
-  const transitionIds = Object.keys(state.workflow.transitionsByWorkflowTemplateId[workflowTemplateId])
-  return transitionIds.map(transitionId => state.workflow.workflowTransitionsById[transitionId]).filter(transition => transition !== undefined)
-}
+)

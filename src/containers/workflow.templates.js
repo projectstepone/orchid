@@ -47,9 +47,9 @@ const WorkflowTemplates = () => {
   const [updatingTemplate, setUpdatingTemplate] = useState(false)
   const [updatedWorkflowTemplate, setUpdatedWorkflowTemplate] = useState(DEFAULT_WORKFLOW_TEMPLATE)
   const [workflowTemplate, setWorkflowTemplate] = useState(DEFAULT_WORKFLOW_TEMPLATE)
-  const workflowTemplates = useSelector(state => workflowSelectors.getWorkflowTemplates(state))
-  const workflowTemplateCreateProgress = useSelector(state => workflowSelectors.getWorkflowCreateProgress(state, workflowTemplate.name))
-  const workflowTemplateUpdateProgress = useSelector(state => workflowSelectors.getWorkflowUpdateProgress(state, updatedWorkflowTemplate.id))
+  const workflowTemplates = useSelector(state => workflowSelectors.selectWorkflowTemplates(state))
+  const workflowTemplateCreateProgress = useSelector(state => workflowSelectors.selectWorkflowCreateProgressByName(state, workflowTemplate.name))
+  const workflowTemplateUpdateProgress = useSelector(state => workflowSelectors.selectWorkflowUpdateProgressByTemplateId(state, updatedWorkflowTemplate.id))
   const snackbarValue = React.useContext(SnackbarContext)
   const { showSuccess, showError } = snackbarValue
 
